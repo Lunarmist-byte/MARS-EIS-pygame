@@ -27,6 +27,7 @@ class PlayerState:
     # Environmental zone & EVA Exploration state
     is_outside: bool = False
     location_name: str = "Base Hab Interior"
+    active_crew_id: int = 1
 
     # Action execution feedback
     last_action_message: str = "System Initialized"

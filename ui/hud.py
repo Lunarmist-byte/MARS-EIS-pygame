@@ -80,13 +80,13 @@ class HUD:
             # -------------------------------------------------------------
             # MINIMAL 8-BIT COLLAPSED HUD (Zero Fluff, 100% Screen Clarity)
             # -------------------------------------------------------------
-            self._render_minimal_top_bar(surface, world_state, player_state, grid_challenges)
+            self._render_minimal_top_bar(surface, world_state, player_state, grid_challenges, active_crew_id)
             self._render_minimal_bottom_bar(surface, player_state, nearby_facility, nearby_npc, nearby_station)
         else:
             # -------------------------------------------------------------
             # EXPANDED 8-BIT TELEMETRY PANELS
             # -------------------------------------------------------------
-            self._render_top_bar(surface, world_state, backend_url)
+            self._render_top_bar(surface, world_state, backend_url, active_crew_id)
             self._render_environmental_panel(surface, world_state)
             self._render_infrastructure_panel(surface, world_state)
             self._render_mission_panel(surface, mission_system, nearby_facility, (player_state.x, player_state.y), base_facilities, world_state, collectibles, grid_challenges)
@@ -111,6 +111,7 @@ class HUD:
         world_state: WorldState,
         player_state: PlayerState,
         grid_challenges: Optional[Any] = None,
+        active_crew_id: int = 1,
     ) -> None:
         """Render single compact 8-bit top telemetry ribbon."""
         bar_h = 28
@@ -123,8 +124,9 @@ class HUD:
         font = pygame.font.SysFont("Consolas", 11, bold=True)
 
         # Telemetry chunks:
-        # [ COMMANDER SUSO ]
-        name_surf = font.render("[ COMMANDER SUSO ]", True, (255, 215, 0))
+        # Dynamic active crew member name
+        crew_info = CREW_MEMBERS.get(active_crew_id, CREW_MEMBERS[1])
+        name_surf = font.render(f"[ {crew_info['name'].upper()} ]", True, (255, 215, 0))
         surface.blit(name_surf, (bar_rect.x + 8, bar_rect.y + 7))
 
         curr_x = bar_rect.x + name_surf.get_width() + 10
@@ -231,14 +233,21 @@ class HUD:
     # -------------------------------------------------------------------------
     # EXPANDED TELEMETRY INTERFACE (Clean 8-Bit Architecture)
     # -------------------------------------------------------------------------
-    def _render_top_bar(self, surface: pygame.Surface, world_state: WorldState, backend_url: str) -> None:
+    def _render_top_bar(
+        self,
+        surface: pygame.Surface,
+        world_state: WorldState,
+        backend_url: str,
+        active_crew_id: int = 1,
+    ) -> None:
         """Render expanded top telemetry banner."""
         bar_rect = pygame.Rect(8, 8, WINDOW_WIDTH - 16, 32)
         pygame.draw.rect(surface, (8, 12, 18), bar_rect)
         pygame.draw.rect(surface, COLOR_ACCENT_MARS, bar_rect, width=1)
 
         font = pygame.font.SysFont("Consolas", 12, bold=True)
-        t_surf = font.render(f"MARS-EIS // {world_state.site_name.upper()} BASE — COMMANDER SUSO", True, COLOR_ACCENT_MARS)
+        crew_info = CREW_MEMBERS.get(active_crew_id, CREW_MEMBERS[1])
+        t_surf = font.render(f"MARS-EIS // {world_state.site_name.upper()} BASE — {crew_info['name'].upper()}", True, COLOR_ACCENT_MARS)
         surface.blit(t_surf, (bar_rect.x + 10, bar_rect.y + 8))
 
         time_str = f"SOL {world_state.sol:03d} | {world_state.local_solar_time} MTC | Ls {world_state.solar_longitude_deg:.1f}°"
@@ -401,7 +410,8 @@ class HUD:
         else:
             text_x = panel_rect.x + 8
 
-        hdr = font_hdr.render("COMMANDER SUSO // MISSION COMMANDER", True, (255, 215, 0))
+        crew_info = CREW_MEMBERS.get(active_crew_id, CREW_MEMBERS[1])
+        hdr = font_hdr.render(f"{crew_info['name'].upper()} // {crew_info['role'].upper()}", True, (255, 215, 0))
         surface.blit(hdr, (text_x, panel_rect.y + 8))
 
         is_out = getattr(player_state, "is_outside", False)
@@ -423,12 +433,9 @@ class HUD:
         ctrl_str = "[WASD] Move  [Shift] Sprint  [Space] Low-G Hop  [E] Interact  [C] Clean  [X] Drill  [T] Catastrophes  [H] Collapse HUD"
         surface.blit(font.render(ctrl_str, True, (160, 180, 200)), (bar_rect.x + 8, bar_rect.y + 8))
 
-        credit_surf = font.render("Made by Lunarmist-byte", True, (0, 229, 255))
-        surface.blit(credit_surf, (bar_rect.right - credit_surf.get_width() - 8, bar_rect.y + 8))
-
     def _render_help_overlay(self, surface: pygame.Surface) -> None:
         """Render retro help dialog."""
-        rect = pygame.Rect(WINDOW_WIDTH // 2 - 320, WINDOW_HEIGHT // 2 - 190, 640, 380)
+        rect = pygame.Rect(WINDOW_WIDTH // 2 - 280, WINDOW_HEIGHT // 2 - 180, 560, 360)
         pygame.draw.rect(surface, (8, 12, 18), rect)
         pygame.draw.rect(surface, (0, 229, 255), rect, width=2)
 
@@ -444,25 +451,21 @@ class HUD:
             ("E", "Interact / Launch Facility Challenge Minigame / Talk to NPCs"),
             ("C", "Electrostatic Photovoltaic Wiper Clean"),
             ("X", "Subsurface Regolith Core Excavation"),
+            ("1 / 2 / 3 / 4", "Swap Astronaut (Suso, Gowri, Amal, Christy)"),
+            ("Tab", "Cycle Active Crew Operator"),
             ("H", "Collapse / Expand 8-Bit Minimal HUD Telemetry"),
             ("T / F4", "MARS-EIS Situation Injector (Scenarios & Catastrophes)"),
             ("F5", "Toggle Real-Time WebSocket Live Feed Monitor"),
             ("ESC", "Close Overlays / Abort Active Minigame Challenge"),
         ]
 
-        curr_y = rect.y + 44
+        curr_y = rect.y + 42
         for k, d in shortcuts:
             ks = font_small.render(f"[{k}]", True, (255, 215, 0))
             ds = font_small.render(f"— {d}", True, COLOR_TEXT_PRIMARY)
             surface.blit(ks, (rect.x + 16, curr_y))
-            surface.blit(ds, (rect.x + 140, curr_y))
-            curr_y += 24
-
-        # Credits section
-        curr_y += 6
-        cred_font = pygame.font.SysFont("Consolas", 10, bold=True)
-        cred_text = "Made by Lunarmist-byte | GitHub: https://github.com/Lunarmist-byte | LinkedIn: https://www.linkedin.com/in/amal-s-kumar-ba69a1290/"
-        surface.blit(cred_font.render(cred_text, True, (255, 215, 0)), (rect.x + 16, curr_y))
+            surface.blit(ds, (rect.x + 150, curr_y))
+            curr_y += 22
 
         surface.blit(font_small.render("Press [F1] or [ESC] to return to simulation.", True, (0, 229, 255)), (rect.x + 16, rect.bottom - 26))
 

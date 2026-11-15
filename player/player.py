@@ -34,21 +34,18 @@ class Player:
         self.radius = PLAYER_RADIUS
 
     def switch_character(self, character_id: int = 1) -> None:
-        """Switch active astronaut crew member.
-        
-        Commander Suso (Sprite 1) is the designated main player character;
-        Amal (Sprite 3), Gowri (Sprite 2), and Christy (Sprite 4) are living base NPCs.
-        """
-        # Commander Suso (Sprite 1) is the ONLY main player character
-        self.animation.load_crew_character(1)
-        if character_id == 2:
-            self.state.set_action_feedback("Gowri is in Research Lab // Commander Suso is Field Operator", True, duration=2.5)
-        elif character_id == 3:
-            self.state.set_action_feedback("Amal is at Comms Relays // Commander Suso is Field Operator", True, duration=2.5)
-        elif character_id == 4:
-            self.state.set_action_feedback("Christy is in Workshop // Commander Suso is Field Operator", True, duration=2.5)
-        else:
-            self.state.set_action_feedback("Commander Suso // Mission Commander", True, duration=2.5)
+        """Switch active astronaut crew member."""
+        if character_id not in (1, 2, 3, 4):
+            character_id = 1
+
+        self.animation.load_crew_character(character_id)
+        self.state.active_crew_id = character_id
+
+        from config import CREW_MEMBERS
+        crew_info = CREW_MEMBERS.get(character_id, {"name": f"Astronaut {character_id}", "role": "Crew Member"})
+        name = crew_info["name"]
+        role = crew_info["role"]
+        self.state.set_action_feedback(f"Active Operator: {name} // {role}", True, duration=3.0)
 
     @property
     def velocity(self) -> pygame.Vector2:

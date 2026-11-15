@@ -145,7 +145,21 @@ class NPCSystem:
     """Manages base crew NPCs, proximity dialogue, and rendering."""
 
     def __init__(self) -> None:
-        self.npcs: List[CrewNPC] = [
+        self.all_npcs: List[CrewNPC] = [
+            CrewNPC(
+                npc_id="npc_suso",
+                name="Commander Suso",
+                role="Mission Commander",
+                sprite_id=1,
+                world_x=450 * WORLD_SCALE,
+                world_y=410 * WORLD_SCALE,
+                dialogues=[
+                    "Commander Suso here! Great to see you on station. All habitat telemetry and ECLSS reserves are green.",
+                    "Keep the exterior solar arrays clear of ferric dust and monitor battery charge levels.",
+                    "Proceed with your research and engineering operations. Jezero base is running smoothly.",
+                    "Radio comms to mission control are open. Outstanding work keeping the expedition on track!",
+                ],
+            ),
             CrewNPC(
                 npc_id="npc_amal",
                 name="Amal",
@@ -189,10 +203,18 @@ class NPCSystem:
                 ],
             ),
         ]
+        self.active_player_id: int = 1
+        # By default, player is Commander Suso (1), so NPCs are Amal (3), Gowri (2), and Christy (4)
+        self.npcs: List[CrewNPC] = [npc for npc in self.all_npcs if npc.sprite_id != 1]
 
         # Active dialogue overlay state
         self.active_dialogue: Optional[Dict[str, Any]] = None
         self.dialogue_timer: float = 0.0
+
+    def set_active_player(self, character_id: int) -> None:
+        """Update active crew member; the other 3 become interactive NPCs."""
+        self.active_player_id = character_id
+        self.npcs = [npc for npc in self.all_npcs if npc.sprite_id != character_id]
 
     def get_nearby_npc(self, player_world_pos: pygame.Vector2, radius: float = 65.0) -> Optional[CrewNPC]:
         """Find NPC within talking range."""

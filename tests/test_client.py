@@ -164,6 +164,13 @@ class TestMarsSurvivalClient(unittest.TestCase):
             self.assertIsInstance(frame, pygame.Surface)
             self.assertTrue(frame.get_width() > 0 and frame.get_height() > 0)
 
+        # Verify player character switching to all 4 crew members
+        player = Player()
+        for cid in (2, 3, 4, 1):
+            player.switch_character(cid)
+            self.assertEqual(player.animation.character_id, cid)
+            self.assertEqual(player.state.active_crew_id, cid)
+
     def test_wall_collision_bounds_player(self):
         """Verify the player character cannot walk over solid base walls."""
         base = MarsBase()

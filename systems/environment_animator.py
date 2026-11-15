@@ -25,61 +25,118 @@ from world.world_state import WorldState
 
 
 class DustParticle:
-    """Represents a simulated grain of suspended Martian ferric oxide regolith.
+    """Represents a simulated grain or jagged fragment of Martian regolith dust.
     
     Tiers:
-      0: Background micro-aerosol (slow drift, distant atmospheric suspension)
-      1: Midground ferric regolith grain (varying terracotta/basalt hues, organic eddy curl)
-      2: Catastrophe storm streak & vortex grain (high-speed wind streaks, whipped by gale gusts)
+      0: Background micro-dust specks (fine drifting aerosol dust chips)
+      1: Midground tumbling regolith grit shards (angular 3-5 point mineral chips)
+      2: Catastrophe high-speed gale streakers (wind velocity streaks with tumbling fragment head)
+      3: Foreground coarse regolith flakes (large jagged mineral fragments tumbling near camera)
     """
 
     __slots__ = (
         "x", "y", "size", "speed_mult", "base_alpha", "life", "max_life",
-        "tier", "color", "eddy_phase", "eddy_freq", "eddy_amp"
+        "tier", "color", "eddy_phase", "eddy_freq", "eddy_amp",
+        "angle", "angular_vel", "poly_pts"
     )
 
     def __init__(self, x: float, y: float, tier: int = 1) -> None:
         self.x = x
         self.y = y
         self.tier = tier
+        self.angle = random.uniform(0.0, 6.28)
 
         if tier == 0:
-            # Fine background aerosol
-            self.size = random.uniform(0.9, 1.8)
+            # Fine background aerosol speck (irregular micro-chip)
+            self.size = random.uniform(1.0, 2.0)
             self.speed_mult = random.uniform(0.35, 0.70)
-            self.base_alpha = random.randint(35, 75)
+            self.base_alpha = random.randint(45, 95)
+            self.angular_vel = random.uniform(-2.5, 2.5)
             self.color = random.choice([
-                (195, 110, 60),
-                (180, 95, 45),
-                (210, 130, 75),
+                (195, 105, 50),
+                (175, 85, 38),
+                (210, 125, 65),
+                (150, 75, 35),
             ])
+            # 3-point micro shard
+            self.poly_pts = [
+                (0.0, -self.size),
+                (self.size * 0.85, self.size * 0.6),
+                (-self.size * 0.75, self.size * 0.7),
+            ]
+
         elif tier == 1:
-            # Medium ferric regolith grain
-            self.size = random.uniform(1.8, 3.2)
-            self.speed_mult = random.uniform(0.85, 1.35)
-            self.base_alpha = random.randint(70, 160)
+            # Medium tumbling ferric regolith grit shard (faceted 4-point mineral fragment)
+            self.size = random.uniform(2.2, 4.2)
+            self.speed_mult = random.uniform(0.9, 1.45)
+            self.base_alpha = random.randint(90, 190)
+            self.angular_vel = random.uniform(-5.5, 5.5)
             self.color = random.choice([
-                (225, 125, 65),   # Martian Terracotta
-                (205, 100, 50),   # Ferric Red Oxide
-                (235, 160, 85),   # Desert Gold
-                (175, 80, 40),    # Basalt Ochre
+                (225, 115, 55),   # Martian Terracotta
+                (205, 90, 40),    # Ferric Red Oxide
+                (235, 155, 75),   # Desert Gold Silt
+                (165, 75, 32),    # Basalt Ochre
+                (75, 55, 45),     # Dark Basaltic Grit
+                (240, 185, 115),  # Silicate Sand Grain
             ])
+            # Irregular 4-point jagged fragment polygon
+            r1 = self.size * random.uniform(0.7, 1.25)
+            r2 = self.size * random.uniform(0.6, 1.1)
+            r3 = self.size * random.uniform(0.7, 1.3)
+            r4 = self.size * random.uniform(0.5, 1.0)
+            self.poly_pts = [
+                (0.0, -r1),
+                (r2 * 0.9, -r2 * 0.2),
+                (r3 * 0.4, r3 * 0.95),
+                (-r4 * 0.85, r4 * 0.3),
+            ]
+
+        elif tier == 2:
+            # Violent catastrophe storm streak with tumbling head fragment
+            self.size = random.uniform(3.0, 5.2)
+            self.speed_mult = random.uniform(1.8, 2.8)
+            self.base_alpha = random.randint(150, 235)
+            self.angular_vel = random.uniform(-7.0, 7.0)
+            self.color = random.choice([
+                (245, 165, 80),   # Specular Silt Grain
+                (230, 115, 55),   # High-wind Ferric Streak
+                (255, 190, 105),  # Solar-backlit Amber
+                (210, 85, 35),    # Hematite Iron Shard
+                (65, 48, 40),     # Dark Basalt Ash
+            ])
+            # Triangular arrowhead fragment
+            self.poly_pts = [
+                (self.size * 1.2, 0.0),
+                (-self.size * 0.6, -self.size * 0.7),
+                (-self.size * 0.6, self.size * 0.7),
+            ]
+
         else:
-            # Violent catastrophe storm streak
-            self.size = random.uniform(2.4, 4.2)
-            self.speed_mult = random.uniform(1.6, 2.5)
-            self.base_alpha = random.randint(130, 220)
+            # Tier 3: Foreground coarse regolith flakes tumbling near visor
+            self.size = random.uniform(4.5, 7.5)
+            self.speed_mult = random.uniform(2.2, 3.4)
+            self.base_alpha = random.randint(180, 245)
+            self.angular_vel = random.uniform(-9.0, 9.0)
             self.color = random.choice([
-                (245, 175, 95),   # Specular Silt Grain
-                (230, 130, 70),   # High-wind Ferric Streak
-                (255, 195, 120),  # Solar-backlit Amber
+                (220, 100, 45),   # Coarse Ferric Flake
+                (185, 80, 35),    # Weathered Basalt Chip
+                (245, 175, 90),   # Sunlit Quartz-coated Grain
+                (60, 45, 38),     # Volcanic Basalt Plate
+                (235, 130, 60),   # Sintered Dust Shard
             ])
+            # Jagged 5-point mineral plate
+            r_vals = [self.size * random.uniform(0.65, 1.2) for _ in range(5)]
+            angles = [0.0, 1.2, 2.6, 3.9, 5.1]
+            self.poly_pts = [
+                (math.cos(a) * r, math.sin(a) * r)
+                for a, r in zip(angles, r_vals)
+            ]
 
         self.life = random.uniform(0.0, 5.0)
-        self.max_life = random.uniform(4.0, 9.0)
+        self.max_life = random.uniform(3.5, 8.5)
         self.eddy_phase = random.uniform(0.0, 6.28)
-        self.eddy_freq = random.uniform(1.2, 3.0)
-        self.eddy_amp = random.uniform(8.0, 24.0)
+        self.eddy_freq = random.uniform(1.2, 3.5)
+        self.eddy_amp = random.uniform(10.0, 28.0)
 
 
 class EnvironmentAnimator:
@@ -93,15 +150,17 @@ class EnvironmentAnimator:
         self.shake_offset_y: float = 0.0
         self.noise_time: float = 0.0
 
-        # 2. Authentic Martian Dust Particle System (Tier 0, 1, and 2)
+        # 2. Authentic Martian Dust Particle System (Tiers 0, 1, 2, 3)
         self.particles: List[DustParticle] = []
-        # Pre-allocate particles: 120 micro + 140 midground + 90 catastrophe streaks
-        for _ in range(120):
+        # Pre-allocate 350 particles across all 4 tiers:
+        for _ in range(110):
             self.particles.append(DustParticle(random.uniform(0, WINDOW_WIDTH), random.uniform(0, WINDOW_HEIGHT), tier=0))
-        for _ in range(140):
+        for _ in range(130):
             self.particles.append(DustParticle(random.uniform(0, WINDOW_WIDTH), random.uniform(0, WINDOW_HEIGHT), tier=1))
-        for _ in range(90):
+        for _ in range(70):
             self.particles.append(DustParticle(random.uniform(0, WINDOW_WIDTH), random.uniform(0, WINDOW_HEIGHT), tier=2))
+        for _ in range(40):
+            self.particles.append(DustParticle(random.uniform(0, WINDOW_WIDTH), random.uniform(0, WINDOW_HEIGHT), tier=3))
         self.max_particles = len(self.particles)
 
         # 3. Dedicated transparent surfaces for True Alpha Blending
@@ -221,15 +280,15 @@ class EnvironmentAnimator:
         vx = math.cos(wind_rad) * base_wind_px
         vy = math.sin(wind_rad) * base_wind_px
 
-        # 3. Update Dust Particles with Sinusoidal Eddy Swirls
-        # Scale active particles: ambient calm has ~35-50 subtle grains, catastrophes unleash up to 350 particles!
+        # 3. Update Dust Particles with Sinusoidal Eddy Swirls & Tumbling Physics
+        # High volume during storms: up to 350 literal physical fragments tumbling simultaneously
         if is_dust_storm_catastrophe:
-            active_count = min(self.max_particles, int(180 + tau * 75))
+            active_count = min(self.max_particles, int(260 + tau * 50))
         elif is_any_catastrophe:
-            active_count = 140
+            active_count = 220
         else:
             # Ambient condition: subtle, elegant suspension
-            active_count = min(70, int(30 + tau * 45))
+            active_count = min(90, int(40 + tau * 55))
 
         for i in range(active_count):
             p = self.particles[i]
@@ -241,9 +300,11 @@ class EnvironmentAnimator:
             p.x += (vx * p.speed_mult + eddy_x) * dt
             p.y += (vy * p.speed_mult + eddy_y) * dt
             p.life += dt
+            # Rotational tumbling of individual mineral fragments
+            p.angle += p.angular_vel * dt
 
             # Wrap-around boundaries (with margin for streaks)
-            margin = 50
+            margin = 60
             if p.x > WINDOW_WIDTH + margin:
                 p.x = -margin
                 p.y = random.uniform(0, WINDOW_HEIGHT)
@@ -313,7 +374,7 @@ class EnvironmentAnimator:
         self._render_catastrophes(surface, world_state)
 
     def _render_lighting(self, surface: pygame.Surface, world_state: WorldState) -> None:
-        """Simulate Mars Sol diurnal cycle & forward Mie scattering blue sunset."""
+        """Simulate Mars Sol diurnal cycle & atmospheric lighting."""
         gv = world_state.godot_visuals
         frac = world_state.fractional_sol
         noon_offset = abs(frac - 0.5) * 2.0  # 0.0 at noon, 1.0 at midnight
@@ -324,6 +385,17 @@ class EnvironmentAnimator:
 
         self.lighting_surface.fill((0, 0, 0, 0))
 
+        cats = self.active_catastrophes
+        is_dust_storm = any("DUST" in c or "STORM" in c for c in cats) or (tau >= 1.0)
+
+        # In a dust storm, DUST BLOCKS ALL BLUE TWILIGHT SCATTERING!
+        # Zero blue color: sky is darkened by dense iron oxide dust attenuation.
+        if is_dust_storm:
+            storm_darkness = min(210, int(85 + tau * 45))
+            self.lighting_surface.fill((110, 52, 20, storm_darkness))
+            surface.blit(self.lighting_surface, (0, 0))
+            return
+
         # Check if MARS-EIS live feed computed Mie scattering blue twilight directly
         is_blue_twilight = gv.get("is_blue_twilight", (78.0 <= zenith_deg <= 96.0))
 
@@ -332,7 +404,7 @@ class EnvironmentAnimator:
             night_darkness = min(180, int((zenith_deg - 96.0) / 40.0 * 180))
             self.lighting_surface.fill((10, 14, 25, night_darkness))
 
-        # Martian Blue Twilight (zenith between 78 and 96 deg or live feed flagged)
+        # Martian Blue Twilight (ONLY during clean, calm Martian sunsets with no storm)
         elif is_blue_twilight:
             blend = 1.0 - abs(zenith_deg - 87.0) / 9.0 if 78.0 <= zenith_deg <= 96.0 else 0.8
             twilight_alpha = int(blend * 110)
@@ -353,7 +425,7 @@ class EnvironmentAnimator:
         surface.blit(self.lighting_surface, (0, 0))
 
     def _render_particles(self, surface: pygame.Surface, world_state: WorldState) -> None:
-        """Render multi-tier original Martian dust particles with true alpha blending."""
+        """Render multi-tier literal Martian dust fragments and regolith shards with true alpha blending."""
         env = world_state.environment
         tau = env.dust_opacity_tau if env.dust_opacity_tau is not None else 0.40
         wind_speed = env.wind_speed_m_s if env.wind_speed_m_s is not None else 6.0
@@ -363,13 +435,13 @@ class EnvironmentAnimator:
         is_dust_storm = any("DUST" in c or "STORM" in c for c in cats) or (tau >= 1.0)
         is_catastrophe = len(cats) > 0 or is_dust_storm
 
-        # Active particle slice
+        # Active particle slice: high volume in dust storms
         if is_dust_storm:
-            active_count = min(self.max_particles, int(180 + tau * 75))
+            active_count = min(self.max_particles, int(260 + tau * 50))
         elif is_catastrophe:
-            active_count = 140
+            active_count = 220
         else:
-            active_count = min(70, int(30 + tau * 45))
+            active_count = min(90, int(40 + tau * 55))
 
         # Clear transparent particle canvas
         self.particle_surface.fill((0, 0, 0, 0))
@@ -379,13 +451,13 @@ class EnvironmentAnimator:
         dir_x = math.cos(wind_rad)
         dir_y = math.sin(wind_rad)
 
-        # 1. Catastrophe Atmospheric Dust Haze Veil
+        # 1. Catastrophe Atmospheric Regolith Haze (Warm Ferric Amber, ZERO Blue)
         if is_dust_storm:
-            pulse = 0.85 + 0.15 * math.sin(self.total_time * 2.5)
-            haze_alpha = min(160, int((70 + tau * 35) * pulse))
-            self.particle_surface.fill((165, 80, 35, haze_alpha))
+            pulse = 0.88 + 0.12 * math.sin(self.total_time * 2.5)
+            haze_alpha = min(150, int((60 + tau * 35) * pulse))
+            self.particle_surface.fill((155, 75, 28, haze_alpha))
 
-        # 2. Render Individual Particles
+        # 2. Render Individual Rotated Dust Fragments & Mineral Shards
         for i in range(min(active_count, len(self.particles))):
             p = self.particles[i]
 
@@ -394,45 +466,76 @@ class EnvironmentAnimator:
             fade = math.sin(math.pi * life_norm)
 
             if is_dust_storm:
-                alpha = min(240, int(p.base_alpha * fade * (1.1 + tau * 0.3)))
+                alpha = min(245, int(p.base_alpha * fade * (1.15 + tau * 0.35)))
             else:
                 alpha = min(200, int(p.base_alpha * fade * 0.85))
 
             if alpha <= 4:
                 continue
 
-            # Tier 2: Catastrophe High-Wind Streaks
-            if p.tier == 2 and (is_catastrophe or wind_speed > 12.0 or tau > 0.8):
-                streak_len = int(p.size * (4.0 + wind_speed * 0.45))
+            cos_a = math.cos(p.angle)
+            sin_a = math.sin(p.angle)
+
+            # Tier 3: Foreground Coarse Regolith Flakes & Shards
+            if p.tier == 3:
+                rot_pts = [
+                    (int(p.x + cos_a * dx - sin_a * dy), int(p.y + sin_a * dx + cos_a * dy))
+                    for dx, dy in p.poly_pts
+                ]
+                pygame.draw.polygon(self.particle_surface, (*p.color, alpha), rot_pts)
+                # Facet highlight on the leading edge
+                if len(rot_pts) >= 2:
+                    edge_col = (
+                        min(255, p.color[0] + 55),
+                        min(255, p.color[1] + 45),
+                        min(255, p.color[2] + 35),
+                        min(255, alpha + 35),
+                    )
+                    pygame.draw.line(self.particle_surface, edge_col, rot_pts[0], rot_pts[1], width=1)
+
+            # Tier 2: Catastrophe High-Wind Gale Streaks with Tumbling Shard Heads
+            elif p.tier == 2 and (is_catastrophe or wind_speed > 11.0 or tau > 0.8):
+                streak_len = int(p.size * (4.5 + wind_speed * 0.45))
                 end_x = int(p.x + dir_x * streak_len)
                 end_y = int(p.y + dir_y * streak_len)
-                col = (*p.color, alpha)
 
-                # Wind streak line
+                # Trailing dust grit streak
+                col = (*p.color, alpha)
                 pygame.draw.line(
                     self.particle_surface,
                     col,
                     (int(p.x), int(p.y)),
                     (end_x, end_y),
-                    width=max(1, int(p.size * 0.75))
+                    width=max(1, int(p.size * 0.75)),
                 )
-                # Specular head grain
-                head_col = (min(255, p.color[0] + 25), min(255, p.color[1] + 25), min(255, p.color[2] + 20), min(255, alpha + 30))
-                pygame.draw.circle(self.particle_surface, head_col, (end_x, end_y), max(1, int(p.size * 0.5)))
+                # Tumbling shard head fragment at streak tip
+                head_pts = [
+                    (int(end_x + cos_a * dx - sin_a * dy), int(end_y + sin_a * dx + cos_a * dy))
+                    for dx, dy in p.poly_pts
+                ]
+                head_col = (
+                    min(255, p.color[0] + 30),
+                    min(255, p.color[1] + 25),
+                    min(255, p.color[2] + 20),
+                    min(255, alpha + 20),
+                )
+                pygame.draw.polygon(self.particle_surface, head_col, head_pts)
 
-            # Tier 1: Midground Ferric Regolith Grains with Soft Halo
+            # Tier 1: Midground Tumbling Regolith Grit Shards
             elif p.tier == 1:
-                # Soft outer glow
-                glow_col = (*p.color, max(5, alpha // 4))
-                pygame.draw.circle(self.particle_surface, glow_col, (int(p.x), int(p.y)), int(p.size * 1.8))
-                # Dense solid grain core
-                core_col = (*p.color, alpha)
-                pygame.draw.circle(self.particle_surface, core_col, (int(p.x), int(p.y)), int(p.size))
+                rot_pts = [
+                    (int(p.x + cos_a * dx - sin_a * dy), int(p.y + sin_a * dx + cos_a * dy))
+                    for dx, dy in p.poly_pts
+                ]
+                pygame.draw.polygon(self.particle_surface, (*p.color, alpha), rot_pts)
 
-            # Tier 0: Background Micro-Aerosols
+            # Tier 0: Background Micro-Aerosol Dust Chips
             else:
-                col = (*p.color, alpha)
-                pygame.draw.circle(self.particle_surface, col, (int(p.x), int(p.y)), int(p.size))
+                rot_pts = [
+                    (int(p.x + cos_a * dx - sin_a * dy), int(p.y + sin_a * dx + cos_a * dy))
+                    for dx, dy in p.poly_pts
+                ]
+                pygame.draw.polygon(self.particle_surface, (*p.color, alpha), rot_pts)
 
         # Blit smoothly with true alpha blending over scene
         surface.blit(self.particle_surface, (0, 0))

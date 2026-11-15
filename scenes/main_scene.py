@@ -218,19 +218,24 @@ class MainScene:
 
             elif act == "SELECT_CHAR_1":
                 self.player.switch_character(1)
+                self.npc_system.set_active_player(1)
                 self.audio.play("beep")
             elif act == "SELECT_CHAR_2":
                 self.player.switch_character(2)
+                self.npc_system.set_active_player(2)
                 self.audio.play("beep")
             elif act == "SELECT_CHAR_3":
                 self.player.switch_character(3)
+                self.npc_system.set_active_player(3)
                 self.audio.play("beep")
             elif act == "SELECT_CHAR_4":
                 self.player.switch_character(4)
+                self.npc_system.set_active_player(4)
                 self.audio.play("beep")
             elif act == "CYCLE_CHAR":
                 next_id = (self.player.animation.character_id % 4) + 1
                 self.player.switch_character(next_id)
+                self.npc_system.set_active_player(next_id)
                 self.audio.play("beep")
 
     def update(self, dt: float) -> bool:
