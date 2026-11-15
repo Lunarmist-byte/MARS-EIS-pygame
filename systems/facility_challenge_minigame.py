@@ -32,6 +32,7 @@ from config import (
     COLOR_TEXT_SECONDARY,
     COLOR_TEXT_HIGHLIGHT,
 )
+from ui.font_manager import FontManager
 
 
 class ChallengeMinigame:
@@ -416,10 +417,10 @@ class ChallengeMinigame:
         pygame.draw.rect(surface, (0, 229, 255), rect, width=2)
         pygame.draw.rect(surface, (0, 160, 200), (rect.x + 3, rect.y + 3, modal_w - 6, modal_h - 6), width=1)
 
-        font_large = pygame.font.SysFont("Consolas", 15, bold=True)
-        font_med = pygame.font.SysFont("Consolas", 12, bold=True)
-        font_small = pygame.font.SysFont("Consolas", 11)
-        font_giant = pygame.font.SysFont("Consolas", 24, bold=True)
+        font_large = FontManager.get(15, bold=True)
+        font_med = FontManager.get(12, bold=True)
+        font_small = FontManager.get(11)
+        font_giant = FontManager.get(24, bold=True)
 
         # Header
         hdr = font_large.render(f"CHALLENGE [{self.mode.replace('_', ' ')}] // {self.facility_name.upper()}", True, (255, 215, 0))

@@ -10,6 +10,7 @@ Credit:
 """
 
 from __future__ import annotations
+import math
 from typing import Optional, Dict, Any, Tuple
 import pygame
 from config import DEFAULT_SPAWN_X, DEFAULT_SPAWN_Y, PLAYER_RADIUS
@@ -32,6 +33,10 @@ class Player:
         self.width = 32
         self.height = 56
         self.radius = PLAYER_RADIUS
+
+        # Pre-allocated ground shadow surface (zero per-frame allocations)
+        self._shadow_base = pygame.Surface((24, 8), pygame.SRCALPHA)
+        pygame.draw.ellipse(self._shadow_base, (0, 0, 0, 85), (0, 0, 24, 8))
 
     def switch_character(self, character_id: int = 1) -> None:
         """Switch active astronaut crew member."""
@@ -78,21 +83,33 @@ class Player:
         min_y = world_rect.top + self.height // 2
         max_y = world_rect.bottom - self.height // 2
 
-        # Try horizontal movement (X axis)
+        # Try horizontal movement (X axis) with corner sliding tolerance
         if displacement.x != 0:
             target_x = max(min_x, min(self.position.x + displacement.x, max_x))
             if mars_base:
                 if not mars_base.check_foot_collision(target_x, self.position.y):
                     self.position.x = target_x
+                else:
+                    # Corner nudge along Y: slide into open doorways/corners
+                    for nudge_y in (-3.0, 3.0, -6.0, 6.0):
+                        if not mars_base.check_foot_collision(target_x, self.position.y + nudge_y):
+                            self.position.y += math.copysign(1.0, nudge_y) * 50.0 * dt
+                            break
             else:
                 self.position.x = target_x
 
-        # Try vertical movement (Y axis) - allows sliding along walls if diagonal
+        # Try vertical movement (Y axis) with corner sliding tolerance
         if displacement.y != 0:
             target_y = max(min_y, min(self.position.y + displacement.y, max_y))
             if mars_base:
                 if not mars_base.check_foot_collision(self.position.x, target_y):
                     self.position.y = target_y
+                else:
+                    # Corner nudge along X: slide into open doorways/corners
+                    for nudge_x in (-3.0, 3.0, -6.0, 6.0):
+                        if not mars_base.check_foot_collision(self.position.x + nudge_x, target_y):
+                            self.position.x += math.copysign(1.0, nudge_x) * 50.0 * dt
+                            break
             else:
                 self.position.y = target_y
 
@@ -116,13 +133,13 @@ class Player:
         jump_z = self.movement.jump_z
 
         # 1. Subtle ground shadow beneath astronaut (scales with hop elevation)
-        shadow_w = max(12, int(24 - jump_z * 0.22))
-        shadow_h = max(4, int(8 - jump_z * 0.08))
-        shadow_alpha = max(20, int(85 - jump_z * 0.9))
-
-        shadow_surf = pygame.Surface((shadow_w, shadow_h), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow_surf, (0, 0, 0, shadow_alpha), (0, 0, shadow_w, shadow_h))
-        surface.blit(shadow_surf, (int(screen_pos.x - shadow_w // 2), int(screen_pos.y + self.height // 2 - shadow_h // 2)))
+        if jump_z <= 0.05:
+            surface.blit(self._shadow_base, (int(screen_pos.x - 12), int(screen_pos.y + self.height // 2 - 4)))
+        else:
+            shadow_w = max(10, int(24 - jump_z * 0.22))
+            shadow_h = max(3, int(8 - jump_z * 0.08))
+            scaled_shadow = pygame.transform.scale(self._shadow_base, (shadow_w, shadow_h))
+            surface.blit(scaled_shadow, (int(screen_pos.x - shadow_w // 2), int(screen_pos.y + self.height // 2 - shadow_h // 2)))
 
         # 2. Main character frame (elevated vertically by jump_z)
         frame = self.animation.get_current_frame()

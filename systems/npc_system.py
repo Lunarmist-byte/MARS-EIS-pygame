@@ -24,6 +24,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Tuple, Any, Dict
 import pygame
 from config import WORLD_SCALE
+from ui.font_manager import FontManager
 
 
 class CrewNPC:
@@ -83,6 +84,25 @@ class CrewNPC:
 
         self.avatar_img = _load(av)
 
+        # Pre-bake static visual surfaces to eliminate per-frame allocations
+        self.shadow_surf = pygame.Surface((22, 6), pygame.SRCALPHA)
+        pygame.draw.ellipse(self.shadow_surf, (0, 0, 0, 90), (0, 0, 22, 6))
+
+        font_badge = FontManager.get(10, bold=True)
+        tag_text = f"[{self.name.upper()}]"
+        tag_surf = font_badge.render(tag_text, True, (0, 255, 200))
+        self.badge_surf = pygame.Surface((tag_surf.get_width() + 6, tag_surf.get_height() + 2))
+        self.badge_surf.fill((10, 15, 25))
+        pygame.draw.rect(self.badge_surf, (0, 255, 200), (0, 0, self.badge_surf.get_width(), self.badge_surf.get_height()), width=1)
+        self.badge_surf.blit(tag_surf, (3, 1))
+
+        prompt_font = FontManager.get(11, bold=True)
+        p_surf = prompt_font.render("[E] TALK", True, (255, 220, 0))
+        self.prompt_surf = pygame.Surface((p_surf.get_width() + 8, p_surf.get_height() + 2))
+        self.prompt_surf.fill((20, 24, 34))
+        pygame.draw.rect(self.prompt_surf, (255, 220, 0), (0, 0, self.prompt_surf.get_width(), self.prompt_surf.get_height()), width=1)
+        self.prompt_surf.blit(p_surf, (4, 1))
+
     def update(self, dt: float, player_world_pos: pygame.Vector2) -> None:
         """Update idle breathing animation and face toward player."""
         self.anim_timer += dt
@@ -108,10 +128,8 @@ class CrewNPC:
 
         cx, cy = int(sp.x), int(sp.y)
 
-        # 1. Ground shadow
-        shadow_surf = pygame.Surface((22, 6), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 90), (0, 0, 22, 6))
-        surface.blit(shadow_surf, (cx - 11, cy + 24))
+        # 1. Ground shadow (pre-baked)
+        surface.blit(self.shadow_surf, (cx - 11, cy + 24))
 
         # 2. Main character frame
         frame = self.idle_frames[self.frame_index]
@@ -120,25 +138,12 @@ class CrewNPC:
         frame_rect = frame.get_rect(center=(cx, cy))
         surface.blit(frame, frame_rect.topleft)
 
-        # 3. 8-Bit Retro Name Badge
-        font_badge = pygame.font.SysFont("Consolas", 10, bold=True)
-        tag_text = f"[{self.name.upper()}]"
-        tag_surf = font_badge.render(tag_text, True, (0, 255, 200))
-        tag_bg = pygame.Surface((tag_surf.get_width() + 6, tag_surf.get_height() + 2))
-        tag_bg.fill((10, 15, 25))
-        pygame.draw.rect(tag_bg, (0, 255, 200), (0, 0, tag_bg.get_width(), tag_bg.get_height()), width=1)
-        tag_bg.blit(tag_surf, (3, 1))
-        surface.blit(tag_bg, (cx - tag_bg.get_width() // 2, cy - 38))
+        # 3. 8-Bit Retro Name Badge (pre-baked)
+        surface.blit(self.badge_surf, (cx - self.badge_surf.get_width() // 2, cy - 38))
 
-        # 4. Proximity "[E] TALK" Prompt
+        # 4. Proximity "[E] TALK" Prompt (pre-baked)
         if is_near:
-            prompt_font = pygame.font.SysFont("Consolas", 11, bold=True)
-            p_surf = prompt_font.render("[E] TALK", True, (255, 220, 0))
-            p_bg = pygame.Surface((p_surf.get_width() + 8, p_surf.get_height() + 2))
-            p_bg.fill((20, 24, 34))
-            pygame.draw.rect(p_bg, (255, 220, 0), (0, 0, p_bg.get_width(), p_bg.get_height()), width=1)
-            p_bg.blit(p_surf, (4, 1))
-            surface.blit(p_bg, (cx - p_bg.get_width() // 2, cy - 54))
+            surface.blit(self.prompt_surf, (cx - self.prompt_surf.get_width() // 2, cy - 54))
 
 
 class NPCSystem:
@@ -282,8 +287,8 @@ class NPCSystem:
                 text_x = 16
 
             # Name header
-            font_title = pygame.font.SysFont("Consolas", 13, bold=True)
-            font_body = pygame.font.SysFont("Consolas", 12)
+            font_title = FontManager.get(13, bold=True)
+            font_body = FontManager.get(12)
             title = font_title.render(f">> {d['name'].upper()} // {d['role'].upper()}", True, (255, 220, 0))
             box_surf.blit(title, (text_x, 8))
 

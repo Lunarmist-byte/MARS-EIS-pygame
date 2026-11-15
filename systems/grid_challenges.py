@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple, Any, Dict
 import pygame
 from config import WORLD_SCALE
+from ui.font_manager import FontManager
 from world.world_state import WorldState
 from world.player_state import PlayerState
 
@@ -362,7 +363,7 @@ class GridChallengeSystem:
 
     def render(self, surface: pygame.Surface, camera: Any, player_world_pos: pygame.Vector2) -> None:
         """Render retro 8-bit pulsing challenge markers [ ★ ] on the base grid."""
-        font_marker = pygame.font.SysFont("Consolas", 11, bold=True)
+        font_marker = FontManager.get(11, bold=True)
         pulse = 0.5 + 0.5 * math.sin(self.anim_time * 6.0)
 
         for s in self.stations:
@@ -399,7 +400,7 @@ class GridChallengeSystem:
 
             # Proximity prompt: "[E] CHALLENGE"
             if is_near and not s.completed:
-                p_font = pygame.font.SysFont("Consolas", 10, bold=True)
+                p_font = FontManager.get(10, bold=True)
                 mode_tag = "MASH" if s.mode == "RAPID_TAP" else "TIMING"
                 p_txt = p_font.render(f"[E] {s.name.upper()} ({mode_tag})", True, (255, 255, 255))
                 pw, ph = p_txt.get_width() + 8, p_txt.get_height() + 2

@@ -29,12 +29,14 @@ class MovementController:
         # Sprint & Thruster
         self.is_sprinting: bool = False
 
-        # Low-Gravity Martian Hop Physics (0.38g)
+        # Low-Gravity Martian Hop Physics (0.38g) with responsive input buffering
         self.jump_z: float = 0.0
         self.jump_vz: float = 0.0
         self.gravity: float = 440.0   # Martian vertical gravity in px/s^2
         self.jump_strength: float = 180.0
         self.just_landed: bool = False
+        self.jump_buffer_timer: float = 0.0
+        self.jump_buffer_window: float = 0.16  # 160ms input buffer grace window
 
         # Footstep cadence tracker
         self.footstep_distance: float = 0.0
@@ -47,11 +49,14 @@ class MovementController:
         self.last_sync_pos: Optional[pygame.Vector2] = None
 
     def start_jump(self) -> bool:
-        """Initiate floaty Martian low-g hop."""
+        """Initiate floaty Martian low-g hop with input buffering."""
         if self.jump_z <= 0.01:
             self.jump_vz = self.jump_strength
             self.jump_z = 0.1
+            self.jump_buffer_timer = 0.0
             return True
+        # Buffer early jump press so hop fires the instant feet touch ground
+        self.jump_buffer_timer = self.jump_buffer_window
         return False
 
     def update_input(self, dx: float, dy: float, sprint: bool = False) -> None:
@@ -83,6 +88,18 @@ class MovementController:
                 self.jump_z = 0.0
                 self.jump_vz = 0.0
                 self.just_landed = True
+                # Trigger buffered hop on landing
+                if self.jump_buffer_timer > 0.0:
+                    self.jump_vz = self.jump_strength
+                    self.jump_z = 0.1
+                    self.jump_buffer_timer = 0.0
+        elif self.jump_buffer_timer > 0.0:
+            self.jump_vz = self.jump_strength
+            self.jump_z = 0.1
+            self.jump_buffer_timer = 0.0
+
+        if self.jump_buffer_timer > 0.0:
+            self.jump_buffer_timer = max(0.0, self.jump_buffer_timer - dt)
 
         # 2. Footstep cadence when moving on ground
         disp = self.velocity * dt

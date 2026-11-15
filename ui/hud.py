@@ -34,6 +34,7 @@ from config import (
 )
 from .components import UIComponents
 from .event_panel import EventPanel
+from .font_manager import FontManager
 from world.world_state import WorldState
 from world.player_state import PlayerState
 
@@ -121,7 +122,7 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), bar_rect)
         pygame.draw.rect(surface, (0, 229, 255), bar_rect, width=1)
 
-        font = pygame.font.SysFont("Consolas", 11, bold=True)
+        font = FontManager.get(11, bold=True)
 
         # Telemetry chunks:
         # Dynamic active crew member name
@@ -195,7 +196,7 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), bar_rect)
         pygame.draw.rect(surface, (255, 179, 0), bar_rect, width=1)
 
-        font = pygame.font.SysFont("Consolas", 10, bold=True)
+        font = FontManager.get(10, bold=True)
 
         # Left: Controls shortcuts
         ctrl_str = "[WASD] Move  [Shift] Sprint  [Space] Low-G Hop  [E] Action  [C] Clean  [X] Drill  [T] Catastrophes  [H] Toggle HUD"
@@ -245,7 +246,7 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), bar_rect)
         pygame.draw.rect(surface, COLOR_ACCENT_MARS, bar_rect, width=1)
 
-        font = pygame.font.SysFont("Consolas", 12, bold=True)
+        font = FontManager.get(12, bold=True)
         crew_info = CREW_MEMBERS.get(active_crew_id, CREW_MEMBERS[1])
         t_surf = font.render(f"MARS-EIS // {world_state.site_name.upper()} BASE — {crew_info['name'].upper()}", True, COLOR_ACCENT_MARS)
         surface.blit(t_surf, (bar_rect.x + 10, bar_rect.y + 8))
@@ -264,8 +265,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), panel_rect)
         pygame.draw.rect(surface, (45, 60, 85), panel_rect, width=1)
 
-        font_hdr = pygame.font.SysFont("Consolas", 11, bold=True)
-        font_txt = pygame.font.SysFont("Consolas", 11)
+        font_hdr = FontManager.get(11, bold=True)
+        font_txt = FontManager.get(11)
 
         hdr = font_hdr.render("ENVIRONMENTAL CONDITIONS", True, (0, 229, 255))
         surface.blit(hdr, (panel_rect.x + 8, panel_rect.y + 8))
@@ -295,8 +296,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), panel_rect)
         pygame.draw.rect(surface, (45, 60, 85), panel_rect, width=1)
 
-        font_hdr = pygame.font.SysFont("Consolas", 11, bold=True)
-        font_txt = pygame.font.SysFont("Consolas", 11)
+        font_hdr = FontManager.get(11, bold=True)
+        font_txt = FontManager.get(11)
 
         hdr = font_hdr.render("BASE INFRASTRUCTURE", True, (0, 255, 120))
         surface.blit(hdr, (panel_rect.x + 8, panel_rect.y + 8))
@@ -335,8 +336,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), panel_rect)
         pygame.draw.rect(surface, (0, 210, 160), panel_rect, width=1)
 
-        font_hdr = pygame.font.SysFont("Consolas", 11, bold=True)
-        font_txt = pygame.font.SysFont("Consolas", 11)
+        font_hdr = FontManager.get(11, bold=True)
+        font_txt = FontManager.get(11)
 
         hdr = font_hdr.render("GRID CHALLENGES", True, (0, 240, 180))
         surface.blit(hdr, (panel_rect.x + 8, panel_rect.y + 8))
@@ -366,8 +367,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), panel_rect)
         pygame.draw.rect(surface, (45, 60, 85), panel_rect, width=1)
 
-        font_hdr = pygame.font.SysFont("Consolas", 11, bold=True)
-        font_txt = pygame.font.SysFont("Consolas", 10)
+        font_hdr = FontManager.get(11, bold=True)
+        font_txt = FontManager.get(10)
 
         hdr = font_hdr.render("ACTIVE HAZARDS", True, COLOR_TEXT_PRIMARY)
         surface.blit(hdr, (panel_rect.x + 8, panel_rect.y + 8))
@@ -398,8 +399,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), panel_rect)
         pygame.draw.rect(surface, (45, 60, 85), panel_rect, width=1)
 
-        font_hdr = pygame.font.SysFont("Consolas", 11, bold=True)
-        font_txt = pygame.font.SysFont("Consolas", 10)
+        font_hdr = FontManager.get(11, bold=True)
+        font_txt = FontManager.get(10)
 
         # Avatar (Commander Suso is Sprite 1, main player)
         av_img = self.avatars.get(active_crew_id, self.avatars.get(1, self.avatars.get(3)))
@@ -429,7 +430,7 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), bar_rect)
         pygame.draw.rect(surface, (45, 60, 85), bar_rect, width=1)
 
-        font = pygame.font.SysFont("Consolas", 10, bold=True)
+        font = FontManager.get(10, bold=True)
         ctrl_str = "[WASD] Move  [Shift] Sprint  [Space] Low-G Hop  [E] Interact  [C] Clean  [X] Drill  [T] Catastrophes  [H] Collapse HUD"
         surface.blit(font.render(ctrl_str, True, (160, 180, 200)), (bar_rect.x + 8, bar_rect.y + 8))
 
@@ -439,8 +440,8 @@ class HUD:
         pygame.draw.rect(surface, (8, 12, 18), rect)
         pygame.draw.rect(surface, (0, 229, 255), rect, width=2)
 
-        font_large = pygame.font.SysFont("Consolas", 14, bold=True)
-        font_small = pygame.font.SysFont("Consolas", 11)
+        font_large = FontManager.get(14, bold=True)
+        font_small = FontManager.get(11)
 
         surface.blit(font_large.render("MARS SURVIVAL // SYSTEM MANUAL & SHORTCUTS", True, (0, 229, 255)), (rect.x + 16, rect.y + 14))
 

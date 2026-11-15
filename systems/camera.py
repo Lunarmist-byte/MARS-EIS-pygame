@@ -24,7 +24,7 @@ class Camera:
         viewport_height: int,
         world_width: int,
         world_height: int,
-        smoothing: float = 0.12
+        smoothing: float = 0.18
     ) -> None:
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
@@ -45,9 +45,10 @@ class Camera:
         desired_offset_x = target_x - (self.viewport_width / 2.0)
         desired_offset_y = target_y - (self.viewport_height / 2.0)
 
-        # Smooth camera movement
-        self.offset_x += (desired_offset_x - self.offset_x) * min(1.0, self.smoothing * 60.0 * dt)
-        self.offset_y += (desired_offset_y - self.offset_y) * min(1.0, self.smoothing * 60.0 * dt)
+        # Smooth camera movement with framerate-independent lerp
+        lerp_rate = min(1.0, max(0.0, self.smoothing * 60.0 * dt))
+        self.offset_x += (desired_offset_x - self.offset_x) * lerp_rate
+        self.offset_y += (desired_offset_y - self.offset_y) * lerp_rate
 
         # Clamp camera viewport within world boundaries
         # Prevents rendering void space beyond map borders
@@ -58,8 +59,8 @@ class Camera:
         self.offset_y = max(0.0, min(self.offset_y, max_offset_y))
 
     def world_to_screen(self, world_x: float, world_y: float) -> pygame.Vector2:
-        """Convert world coordinates to screen display coordinates."""
-        return pygame.Vector2(world_x - self.offset_x, world_y - self.offset_y)
+        """Convert world coordinates to screen display coordinates with pixel-grid snapping."""
+        return pygame.Vector2(round(world_x - self.offset_x), round(world_y - self.offset_y))
 
     def screen_to_world(self, screen_x: float, screen_y: float) -> pygame.Vector2:
         """Convert screen pixel coordinates to world coordinates."""

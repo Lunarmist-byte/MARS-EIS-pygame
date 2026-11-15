@@ -124,7 +124,7 @@ def main() -> int:
             pygame.display.set_icon(icon)
         except Exception:
             pass
-    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+    screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.DOUBLEBUF)
 
     clock = pygame.time.Clock()
 
@@ -147,7 +147,7 @@ def main() -> int:
         while running:
             # Calculate delta time in seconds, clamped to avoid spiral of death on lag spikes
             raw_dt_ms = clock.tick(args.fps)
-            dt = min(raw_dt_ms / 1000.0, 0.1)
+            dt = min(raw_dt_ms / 1000.0, 0.05)
 
             # Update scene
             running = scene.update(dt)

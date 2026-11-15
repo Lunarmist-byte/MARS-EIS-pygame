@@ -1,17 +1,3 @@
-"""MARS SURVIVAL — Tactical Visual Particle FX.
-
-Provides game feel "juice":
-- Astronaut footstep regolith dust puffs
-- Low-gravity liftoff and landing dust rings
-- Thruster plumes during EVA sprint
-- Challenge success celebratory confetti and gas venting
-
-Credit:
-    Made by Lunarmist-byte
-    GitHub: https://github.com/Lunarmist-byte
-    LinkedIn: https://www.linkedin.com/in/amal-s-kumar-ba69a1290/
-"""
-
 from __future__ import annotations
 import math
 import random
@@ -175,8 +161,12 @@ class ParticleFXSystem:
             if r <= 0:
                 continue
 
-            # Draw transparent particle
-            surf_size = (r * 2 + 2, r * 2 + 2)
-            temp_surf = pygame.Surface(surf_size, pygame.SRCALPHA)
-            pygame.draw.circle(temp_surf, (*p.color, int(p.alpha)), (r + 1, r + 1), r)
-            surface.blit(temp_surf, (int(sp.x - r - 1), int(sp.y - r - 1)))
+            # Draw transparent particle efficiently using cached scratch surface
+            surf_size = r * 2 + 2
+            if surf_size <= self._fx_surface.get_width():
+                scratch = self._fx_surface
+                scratch.fill((0, 0, 0, 0))
+            else:
+                scratch = pygame.Surface((surf_size, surf_size), pygame.SRCALPHA)
+            pygame.draw.circle(scratch, (*p.color, int(p.alpha)), (r + 1, r + 1), r)
+            surface.blit(scratch, (int(sp.x - r - 1), int(sp.y - r - 1)), area=pygame.Rect(0, 0, surf_size, surf_size))
