@@ -64,6 +64,7 @@ class WorldState:
     # Emergent simulation events and catastrophes
     active_events: List[Dict[str, Any]] = field(default_factory=list)
     catastrophes: List[Dict[str, Any]] = field(default_factory=list)
+    catastrophe_duration: float = 0.0  # Exact 15-second active catastrophe countdown
     issues: List[Dict[str, Any]] = field(default_factory=list)
     emergency_level: str = "NOMINAL"
     station_health: float = 100.0  # Overall base & habitat integrity (0 - 100%)
@@ -178,7 +179,13 @@ class WorldState:
             self.active_events = data["events"]
 
         if "catastrophes" in data and isinstance(data["catastrophes"], list):
-            self.catastrophes = data["catastrophes"]
+            # Only update catastrophes if actively in hazard window (15.0s)
+            if self.catastrophe_duration > 0.0 or not self.catastrophes:
+                if self.catastrophe_duration > 0.0:
+                    for c in data["catastrophes"]:
+                        if isinstance(c, dict):
+                            c["duration"] = self.catastrophe_duration
+                    self.catastrophes = data["catastrophes"]
 
         if "issues" in data and isinstance(data["issues"], list):
             self.issues = data["issues"]

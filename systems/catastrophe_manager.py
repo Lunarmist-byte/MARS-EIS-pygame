@@ -106,6 +106,10 @@ class CatastropheDirector:
         self.is_emergency: bool = False
         self.current_catastrophe_title: str = ""
 
+        # Strict 15-second catastrophe duration enforcement
+        self.catastrophe_duration_timer: float = 0.0
+        self.is_catastrophe_active: bool = False
+
         # Emergency inactivity failure countdown (1.30 minutes / 90 seconds)
         self.collapse_countdown: float = 90.0
         self.is_game_over: bool = False
@@ -121,8 +125,11 @@ class CatastropheDirector:
         """Revive crew and restart simulation after mission failure."""
         self.is_game_over = False
         self.is_emergency = False
+        self.is_catastrophe_active = False
+        self.catastrophe_duration_timer = 0.0
         self.collapse_countdown = 90.0
         self.world_state.collapse_countdown = 90.0
+        self.world_state.catastrophe_duration = 0.0
         self.world_state.station_health = 100.0
         self.world_state.catastrophes.clear()
         if self.world_state.environment.dust_opacity_tau is not None:
@@ -140,33 +147,39 @@ class CatastropheDirector:
         )
 
     def update(self, dt: float, player_pos: pygame.Vector2) -> None:
-        """Advance disaster simulation, countdown 15s duration, check health restoration, and trigger 5-minute random events."""
+        """Advance disaster simulation, countdown strict 15s duration, check health restoration, and trigger 5-minute random events."""
         if self.is_game_over:
             return
 
-        # 1. Countdown active catastrophe duration (15 seconds)
-        if self.world_state.catastrophes:
-            active_cats = []
-            for c in self.world_state.catastrophes:
-                dur = c.get("duration", 15.0) - dt
-                c["duration"] = dur
-                if dur > 0:
-                    active_cats.append(c)
-                else:
-                    # Catastrophe finished its 15s duration
-                    if self.world_state.environment.dust_opacity_tau is not None and self.world_state.environment.dust_opacity_tau > 1.5:
-                        self.world_state.environment.dust_opacity_tau = 0.45
-                    self.floating_text.spawn(
-                        "Catastrophe hazard (15s) ended! Repair facilities to restore 100% Space Health!",
-                        player_pos.x,
-                        player_pos.y - 35,
-                        color=(255, 200, 80),
-                        big=False,
-                    )
-            self.world_state.catastrophes = active_cats
+        # 1. Strictly countdown active catastrophe duration (15.0 seconds maximum)
+        if self.is_catastrophe_active or self.world_state.catastrophes:
+            if self.catastrophe_duration_timer > 0.0:
+                self.catastrophe_duration_timer -= dt
+                self.world_state.catastrophe_duration = max(0.0, self.catastrophe_duration_timer)
+                for c in self.world_state.catastrophes:
+                    c["duration"] = self.world_state.catastrophe_duration
+
+            if self.catastrophe_duration_timer <= 0.0:
+                # Catastrophe strictly ends at 15 seconds
+                self.catastrophe_duration_timer = 0.0
+                self.is_catastrophe_active = False
+                self.world_state.catastrophe_duration = 0.0
+                self.world_state.catastrophes.clear()
+
+                # Restore atmospheric optical depth back to nominal baseline (0.35)
+                if self.world_state.environment.dust_opacity_tau is not None:
+                    self.world_state.environment.dust_opacity_tau = 0.35
+
+                self.floating_text.spawn(
+                    "★ Catastrophe hazard (15s) ended! Repair facilities for 100% Space Health!",
+                    player_pos.x,
+                    player_pos.y - 35,
+                    color=(255, 220, 80),
+                    big=True,
+                )
 
         # 2. Check emergency status & Space Health recovery
-        has_active_cat = len(self.world_state.catastrophes) > 0 or self.world_state.station_health < 100.0
+        has_active_cat = self.is_catastrophe_active or len(self.world_state.catastrophes) > 0 or self.world_state.station_health < 100.0
 
         if has_active_cat:
             self.is_emergency = True
@@ -244,9 +257,13 @@ class CatastropheDirector:
             "severity": 0.85,
         }
 
-        # 1. Register in WorldState
+        # 1. Register in WorldState with strict 15-second duration
+        cat_dict["duration"] = 15.0
         self.world_state.catastrophes = [cat_dict]
         self.current_catastrophe_title = match["name"]
+        self.catastrophe_duration_timer = 15.0
+        self.is_catastrophe_active = True
+        self.world_state.catastrophe_duration = 15.0
         self.collapse_countdown = 90.0
         self.world_state.collapse_countdown = 90.0
         self.is_game_over = False

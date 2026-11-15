@@ -265,7 +265,7 @@ class EnvironmentAnimator:
         self.active_catastrophes = [
             c.get("type", c.get("catastrophe_type", "")) for c in cats if c.get("active", True)
         ]
-        is_dust_storm_catastrophe = any("DUST" in c or "STORM" in c for c in self.active_catastrophes) or (tau >= 1.0)
+        is_dust_storm_catastrophe = any("DUST" in c or "STORM" in c for c in self.active_catastrophes)
         is_any_catastrophe = len(self.active_catastrophes) > 0
 
         # Calculate wind velocity components
@@ -432,8 +432,8 @@ class EnvironmentAnimator:
         wind_dir_deg = env.wind_direction_deg if env.wind_direction_deg is not None else 135.0
 
         cats = self.active_catastrophes
-        is_dust_storm = any("DUST" in c or "STORM" in c for c in cats) or (tau >= 1.0)
-        is_catastrophe = len(cats) > 0 or is_dust_storm
+        is_dust_storm = any("DUST" in c or "STORM" in c for c in cats)
+        is_catastrophe = len(cats) > 0
 
         # Active particle slice: high volume in dust storms
         if is_dust_storm:
