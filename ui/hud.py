@@ -127,7 +127,18 @@ class HUD:
         name_surf = font.render("[ COMMANDER SUSO ]", True, (255, 215, 0))
         surface.blit(name_surf, (bar_rect.x + 8, bar_rect.y + 7))
 
-        curr_x = bar_rect.x + name_surf.get_width() + 16
+        curr_x = bar_rect.x + name_surf.get_width() + 10
+
+        # Location & EVA status badge
+        if getattr(player_state, "is_outside", False):
+            loc_label = f"[ ⚡ EVA: {player_state.location_name.upper()} ]"
+            loc_col = (255, 140, 40)
+        else:
+            loc_label = f"[ {player_state.location_name.upper()} ]"
+            loc_col = (0, 229, 255)
+        loc_surf = font.render(loc_label, True, loc_col)
+        surface.blit(loc_surf, (curr_x, bar_rect.y + 7))
+        curr_x += loc_surf.get_width() + 10
 
         # [ HP: 100% ]
         hp_col = COLOR_NOMINAL if player_state.health > 40 else COLOR_CRITICAL
@@ -206,6 +217,15 @@ class HUD:
 
         if prompt_text:
             p_surf = font.render(prompt_text, True, prompt_color)
+            surface.blit(p_surf, (bar_rect.right - p_surf.get_width() - 8, bar_rect.y + 7))
+        else:
+            # Idle context hints: Airlock navigation directions or EVA action prompts
+            if getattr(player_state, "is_outside", False):
+                eva_hint = ">> EVA ACTIVE: [X] Drill Regolith  [C] Clean Solar  [Space] Low-G Hop  [Shift] Sprint"
+                p_surf = font.render(eva_hint, True, (255, 140, 40))
+            else:
+                nav_hint = ">> AIRLOCKS: ◄ West Rover  ▲ North Dish  ► East Pad  ▼ South Surface"
+                p_surf = font.render(nav_hint, True, (0, 229, 255))
             surface.blit(p_surf, (bar_rect.right - p_surf.get_width() - 8, bar_rect.y + 7))
 
     # -------------------------------------------------------------------------
@@ -384,7 +404,9 @@ class HUD:
         hdr = font_hdr.render("COMMANDER SUSO // MISSION COMMANDER", True, (255, 215, 0))
         surface.blit(hdr, (text_x, panel_rect.y + 8))
 
-        hp_txt = font_txt.render(f"Suit Health: {player_state.health:.0f}%  |  Action: {player_state.current_action}", True, COLOR_NOMINAL)
+        is_out = getattr(player_state, "is_outside", False)
+        loc_txt = f"Zone: {getattr(player_state, 'location_name', 'Hab')} [{'EXTERIOR EVA' if is_out else 'INTERIOR'}]"
+        hp_txt = font_txt.render(f"Suit Health: {player_state.health:.0f}%  |  {loc_txt}  |  Act: {player_state.current_action}", True, COLOR_NOMINAL)
         surface.blit(hp_txt, (text_x, panel_rect.y + 26))
 
         fb_msg = player_state.last_action_message or "Systems Operational // Nominal Telemetry"
@@ -401,9 +423,12 @@ class HUD:
         ctrl_str = "[WASD] Move  [Shift] Sprint  [Space] Low-G Hop  [E] Interact  [C] Clean  [X] Drill  [T] Catastrophes  [H] Collapse HUD"
         surface.blit(font.render(ctrl_str, True, (160, 180, 200)), (bar_rect.x + 8, bar_rect.y + 8))
 
+        credit_surf = font.render("Made by Lunarmist-byte", True, (0, 229, 255))
+        surface.blit(credit_surf, (bar_rect.right - credit_surf.get_width() - 8, bar_rect.y + 8))
+
     def _render_help_overlay(self, surface: pygame.Surface) -> None:
         """Render retro help dialog."""
-        rect = pygame.Rect(WINDOW_WIDTH // 2 - 280, WINDOW_HEIGHT // 2 - 180, 560, 360)
+        rect = pygame.Rect(WINDOW_WIDTH // 2 - 320, WINDOW_HEIGHT // 2 - 190, 640, 380)
         pygame.draw.rect(surface, (8, 12, 18), rect)
         pygame.draw.rect(surface, (0, 229, 255), rect, width=2)
 
@@ -432,6 +457,12 @@ class HUD:
             surface.blit(ks, (rect.x + 16, curr_y))
             surface.blit(ds, (rect.x + 140, curr_y))
             curr_y += 24
+
+        # Credits section
+        curr_y += 6
+        cred_font = pygame.font.SysFont("Consolas", 10, bold=True)
+        cred_text = "Made by Lunarmist-byte | GitHub: https://github.com/Lunarmist-byte | LinkedIn: https://www.linkedin.com/in/amal-s-kumar-ba69a1290/"
+        surface.blit(cred_font.render(cred_text, True, (255, 215, 0)), (rect.x + 16, curr_y))
 
         surface.blit(font_small.render("Press [F1] or [ESC] to return to simulation.", True, (0, 229, 255)), (rect.x + 16, rect.bottom - 26))
 

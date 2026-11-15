@@ -24,6 +24,10 @@ class PlayerState:
     current_action: str = "IDLE"
     facing_direction: str = "down"
 
+    # Environmental zone & EVA Exploration state
+    is_outside: bool = False
+    location_name: str = "Base Hab Interior"
+
     # Action execution feedback
     last_action_message: str = "System Initialized"
     last_action_success: Optional[bool] = True

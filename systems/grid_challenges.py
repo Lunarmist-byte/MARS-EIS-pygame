@@ -52,11 +52,11 @@ class GridChallengeSystem:
                 facility_name="ECLSS Oxygen Room",
                 world_x=890 * WORLD_SCALE,
                 world_y=580 * WORLD_SCALE,
-                objective="Calibrate electrolysis cell frequency for pure O2.",
+                objective="Regulate solid oxide electrolysis pressure chamber to produce O2.",
                 reward_desc="+25.0 kg Oxygen Reserve",
                 stat_type="oxygen",
                 stat_boost=25.0,
-                mode="SWEET_SPOT",
+                mode="PRESSURE_VALVE",
             ),
             # 2. Water Recycling
             GridStation(
@@ -65,11 +65,11 @@ class GridChallengeSystem:
                 facility_name="Water Recycling",
                 world_x=710 * WORLD_SCALE,
                 world_y=400 * WORLD_SCALE,
-                objective="Flush perchlorate membranes and centrifuge ice brine.",
+                objective="Balance catalytic filter pressure to flush perchlorate brine.",
                 reward_desc="+35.0 kg Water Reserve",
                 stat_type="water",
                 stat_boost=35.0,
-                mode="SWEET_SPOT",
+                mode="PRESSURE_VALVE",
             ),
             # 3. Mark Watney Space Potatoes (Greenhouse)
             GridStation(
@@ -91,11 +91,11 @@ class GridChallengeSystem:
                 facility_name="Food Greenhouse",
                 world_x=320 * WORLD_SCALE,
                 world_y=580 * WORLD_SCALE,
-                objective="Irrigate nutrient solution into micro-algae seedling beds.",
+                objective="Target and strike illuminated seedling nodes to irrigate nutrients!",
                 reward_desc="+15.0 Days Food Rations",
                 stat_type="food",
                 stat_boost=15.0,
-                mode="SWEET_SPOT",
+                mode="TARGET_STRIKE",
             ),
             # 5. Solar Wiper Array West
             GridStation(
@@ -104,11 +104,11 @@ class GridChallengeSystem:
                 facility_name="Solar Field West",
                 world_x=80 * WORLD_SCALE,
                 world_y=70 * WORLD_SCALE,
-                objective="Wipe basalt dust from photovoltaic cells.",
+                objective="Target and strike basalt dust deposition clusters on solar panels!",
                 reward_desc="+20% Solar Efficiency",
                 stat_type="solar",
                 stat_boost=20.0,
-                mode="SWEET_SPOT",
+                mode="TARGET_STRIKE",
             ),
             # 6. Solar Wiper Array East
             GridStation(
@@ -117,11 +117,11 @@ class GridChallengeSystem:
                 facility_name="Solar Field East",
                 world_x=170 * WORLD_SCALE,
                 world_y=110 * WORLD_SCALE,
-                objective="Align solar tracking servos to midday sun vector.",
+                objective="Input 5-step servo angle sequence to track midday sun vector!",
                 reward_desc="+15% Solar Efficiency",
                 stat_type="solar",
                 stat_boost=15.0,
-                mode="SWEET_SPOT",
+                mode="CIRCUIT_SEQUENCE",
             ),
             # 7. Contractor Tool Chest (Outdoor Supply Crate Near Solar Field)
             GridStation(
@@ -143,11 +143,11 @@ class GridChallengeSystem:
                 facility_name="Power Generator",
                 world_x=500 * WORLD_SCALE,
                 world_y=550 * WORLD_SCALE,
-                objective="Synchronize turbine phase load to capacitor banks.",
+                objective="Wire turbine phase load sequence to capacitor bank breakers!",
                 reward_desc="+30% Battery SOC",
                 stat_type="battery",
                 stat_boost=30.0,
-                mode="SWEET_SPOT",
+                mode="CIRCUIT_SEQUENCE",
             ),
             # 9. Quantum Muon Trap (Nuclear Reactor)
             GridStation(
@@ -156,11 +156,11 @@ class GridChallengeSystem:
                 facility_name="Nuclear Reactor Core",
                 world_x=500 * WORLD_SCALE,
                 world_y=70 * WORLD_SCALE,
-                objective="Catch 3 runaway subatomic particles in the magnetic trap!",
+                objective="Stabilize muon core coolant loop pressure before reactor scrams!",
                 reward_desc="Base Grid Power Overclocked (+600W)",
                 stat_type="power",
                 stat_boost=600.0,
-                mode="SWEET_SPOT",
+                mode="PRESSURE_VALVE",
             ),
             # 10. Automedic Bio-Scanner (Medbay)
             GridStation(
@@ -169,11 +169,11 @@ class GridChallengeSystem:
                 facility_name="Medical Bay",
                 world_x=180 * WORLD_SCALE,
                 world_y=410 * WORLD_SCALE,
-                objective="Conduct full bio-scan and administer regenerative therapy.",
+                objective="Target and neutralize cellular anomalies in automedic bio-scanner!",
                 reward_desc="100% Suit Health & Medical Vitals",
                 stat_type="health",
                 stat_boost=100.0,
-                mode="SWEET_SPOT",
+                mode="TARGET_STRIKE",
             ),
             # 11. Robo-Arm Epic Fist Bump (Workshop)
             GridStation(
@@ -182,11 +182,11 @@ class GridChallengeSystem:
                 facility_name="Robotics Workshop",
                 world_x=680 * WORLD_SCALE,
                 world_y=580 * WORLD_SCALE,
-                objective="Align 6-axis claw to execute legendary robotic fist bump!",
+                objective="Program 5-step kinematic routing to execute robotic fist bump!",
                 reward_desc="Robotics Overclocked (+25% Efficiency)",
                 stat_type="hull",
                 stat_boost=1.0,
-                mode="SWEET_SPOT",
+                mode="CIRCUIT_SEQUENCE",
             ),
             # 12. Alien Phobos Radio Beacon (Giant Satellite Dish)
             GridStation(
@@ -195,11 +195,11 @@ class GridChallengeSystem:
                 facility_name="Top-Left Giant Dish",
                 world_x=290 * WORLD_SCALE,
                 world_y=80 * WORLD_SCALE,
-                objective="Decode extraterrestrial harmonic radio ping from Phobos!",
+                objective="Tune carrier wave with [A]/[D] to match Phobos radio harmonic resonance!",
                 reward_desc="Alien Signal Decoded: 'WE SEE YOU' (+250 Sci)",
                 stat_type="science",
                 stat_boost=250.0,
-                mode="SWEET_SPOT",
+                mode="FREQUENCY_TUNE",
             ),
             # 13. Mission Telemetry Downlink (Comms Operations)
             GridStation(
@@ -208,11 +208,11 @@ class GridChallengeSystem:
                 facility_name="Comms Operations",
                 world_x=340 * WORLD_SCALE,
                 world_y=210 * WORLD_SCALE,
-                objective="Decode atmospheric telemetry and sync orbital packets.",
+                objective="Tune deep space Earth transceiver frequency and lock downlink with [SPACE]!",
                 reward_desc="High-Frequency Telemetry Active",
                 stat_type="comms",
                 stat_boost=1.0,
-                mode="SWEET_SPOT",
+                mode="FREQUENCY_TUNE",
             ),
             # 14. Retro Asteroid Blaster (Command Holo-Globe)
             GridStation(
@@ -221,11 +221,11 @@ class GridChallengeSystem:
                 facility_name="Command Holo-Table",
                 world_x=650 * WORLD_SCALE,
                 world_y=230 * WORLD_SCALE,
-                objective="Intercept 3 incoming orbital micro-meteorites in tactical hologram!",
+                objective="Input tactical intercept trajectory vector to vaporize micro-meteorites!",
                 reward_desc="Planetary Defense Shield Online (+200 Sci)",
                 stat_type="science",
                 stat_boost=200.0,
-                mode="SWEET_SPOT",
+                mode="CIRCUIT_SEQUENCE",
             ),
             # 15. Rover RTG Turbo Jumpstart
             GridStation(
@@ -234,11 +234,11 @@ class GridChallengeSystem:
                 facility_name="Rover Staging Bay",
                 world_x=105 * WORLD_SCALE,
                 world_y=575 * WORLD_SCALE,
-                objective="Rev up the 6-wheel rover RTG alternator for turbo drive!",
+                objective="Crank 6-wheel rover RTG alternator to turbocharge drive motors!",
                 reward_desc="Rover Turbo Active (+500 Science)",
                 stat_type="science",
                 stat_boost=500.0,
-                mode="SWEET_SPOT",
+                mode="RAPID_TAP",
             ),
             # 16. Mystery Supply Crate Near Rover
             GridStation(
@@ -273,11 +273,11 @@ class GridChallengeSystem:
                 facility_name="Water Treatment Hub",
                 world_x=760 * WORLD_SCALE,
                 world_y=410 * WORLD_SCALE,
-                objective="Seal high-pressure thermal ice fissure before greywater floods!",
+                objective="Pump high-pressure thermal ice geyser valve before greywater floods!",
                 reward_desc="+40.0 kg Pure Glacial Water",
                 stat_type="water",
                 stat_boost=40.0,
-                mode="SWEET_SPOT",
+                mode="PRESSURE_VALVE",
             ),
             # 19. Central Life-Support Master Console
             GridStation(
@@ -286,11 +286,11 @@ class GridChallengeSystem:
                 facility_name="Central Rotunda Hub",
                 world_x=500 * WORLD_SCALE,
                 world_y=420 * WORLD_SCALE,
-                objective="Overall ECLSS diagnostic and base master reset.",
+                objective="Input airlock master pressure routing sequence to cycle ECLSS!",
                 reward_desc="Base ECLSS Fully Recalibrated",
                 stat_type="oxygen",
                 stat_boost=20.0,
-                mode="SWEET_SPOT",
+                mode="CIRCUIT_SEQUENCE",
             ),
             # 20. Supply Crate Central Hallway
             GridStation(
@@ -299,11 +299,11 @@ class GridChallengeSystem:
                 facility_name="Central Rotunda Airlock",
                 world_x=370 * WORLD_SCALE,
                 world_y=370 * WORLD_SCALE,
-                objective="Mash button to pry open sticky airlock storage locker!",
-                reward_desc="Found: Spare O2 Canister (+15 kg O2)",
+                objective="Enter airlock digital cipher sequence to open storage locker!",
+                reward_desc="Found 5x Emergency O2 Ampoules (+15 kg O2)",
                 stat_type="oxygen",
                 stat_boost=15.0,
-                mode="RAPID_TAP",
+                mode="CIRCUIT_SEQUENCE",
             ),
         ]
         self.anim_time: float = 0.0

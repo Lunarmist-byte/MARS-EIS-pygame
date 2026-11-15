@@ -161,9 +161,12 @@ $$\text{Readiness Score} = \frac{\text{O}_2 + \text{H}_2\text{O} + \text{Food} +
   * **Gowri** (Sprite 2 — Smiling astronaut with bindi, Research Fellow in Astrobiology) — Located in Hydroponic Greenhouse & Medbay (`[E]` Talk)
   * **Christy** (Sprite 4 — Wavy hair & goatee, Chief Robotics & Electrical Engineer) — Located in Robotics Workshop & Reactor (`[E]` Talk)
 * **Interactive Dialogue System:** Approaching any crew NPC and pressing `[E]` opens an 8-bit dialogue box featuring their custom face portrait and station guidance.
-* **20 Random & Fun Grid Challenge Stations:** Interactive terminals marked with pulsing `[ ★ ]` (Ready) and `[ ✓ ]` (Completed) scattered in rooms, crates, dishes, rovers, and outdoor pads:
-  * **Precision Timing (`SWEET_SPOT`):** Needle resonance alignment (MOXIE O2, Reactor Muon Trap, Alien SETI Beacon, Asteroid Blaster, Robo Fist Bump, Water Geyser).
-  * **Rapid Mashing (`RAPID_TAP`):** High-speed button-mashing frenzy (Mark Watney Space Potatoes, NASA Supply Loot Crate, Tool Chest Pry, Atmospheric Thermal Kite, Rover Turbo Jumpstart).
+* **20 Dynamic & Diverse Grid Challenge Minigames (5 Distinct Gameplay Modes):**
+  * **Circuit Wiring QTE (`CIRCUIT_SEQUENCE`):** Input 5-step illuminated arrow sequence (`[↑][→][↓][←]` or `[WASD]`) with neon feedback (Power Grid, Solar Servos, Holo-Globe Defense, Robotics Arm, Airlock Master Hub).
+  * **Pressure Chamber Regulation (`PRESSURE_VALVE`):** Pump valve with `[SPACE]` to keep fluctuating pressure inside the safety green zone until stability reaches 100% (MOXIE O2 Room, Water Catalytic Filter, Muon Core Reactor, Ice Geyser Valve).
+  * **Oscilloscope Wave Tuning (`FREQUENCY_TUNE`):** Adjust radio carrier frequency with `[A]`/`[D]` until transceiver wave matches the target sine wave, then lock downlink with `[SPACE]` (Deep Space Comms, Phobos Alien Dish).
+  * **Radar Reticle Strike (`TARGET_STRIKE`):** Sweep moving crosshairs across scanning field and strike ore/pathogen nodes with `[SPACE]` (Solar Dust Clusters, Medbay Bio-Scanner, Hydroponic Seedlings).
+  * **High-Speed Turbo Mash (`RAPID_TAP`):** Mash `[SPACE]` or `[E]` to build charge to 100% (Mark Watney Space Potatoes, Rover RTG Turbo, NASA Loot Crates, Atmospheric Sampling Kite).
 * **Collapsible 8-Bit Minimal HUD:** Press `[H]` to toggle between an unobstructed minimal 8-bit ribbon and expanded detailed telemetry.
 * **100% Unobstructed Walkability:** Exterior pathways, airlocks, solar panel fields, rover bay, and east landing pad are completely unblocked and walkable.
 * **Prepared Animation Names:**
@@ -257,8 +260,8 @@ python tests\test_client.py
 | `E` | Engage Facility Interactive Challenge Minigame |
 | `C` | Clean Solar Panels (`CLEAN_PANELS` + Mission completion) |
 | `X` | Subsurface Regolith Excavation (`EXCAVATE`) |
-| `1`, `2`, `3`, `4` | Station Check (Amal = Comms, Gowri = Research, Suso = Commander, Christy = Engineer) |
-| `Tab` | Cycle Next Crew Member |
+| `1`, `2`, `3`, `4` | Crew Station Comms Check (Commander Suso = Player [Sprite 1], Gowri = Research [Sprite 2], Amal = Comms [Sprite 3], Christy = Engineer [Sprite 4]) |
+| `Tab` | Focus Field Commander Suso |
 | `H` | Toggle Collapsible 8-Bit Minimalist HUD / Full Telemetry |
 | `T` / `F4` | Toggle MARS-EIS Situation Injector (Scenarios & Catastrophes) |
 | `F5` | Toggle Real-Time WebSocket Live Feed Monitor Overlay |
@@ -269,8 +272,8 @@ python tests\test_client.py
 
 ---
 
-## 8. Author & License
+## 8. Author & Credits
 
-Developed by **Lunarmist-byte**.
-* GitHub: [https://github.com/Lunarmist-byte](https://github.com/Lunarmist-byte)
-* LinkedIn: [https://www.linkedin.com/in/amal-s-kumar-ba69a1290/](https://www.linkedin.com/in/amal-s-kumar-ba69a1290/)
+### Made by Lunarmist-byte
+* **GitHub Profile:** [https://github.com/Lunarmist-byte](https://github.com/Lunarmist-byte)
+* **LinkedIn Profile:** [https://www.linkedin.com/in/amal-s-kumar-ba69a1290/](https://www.linkedin.com/in/amal-s-kumar-ba69a1290/)

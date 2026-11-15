@@ -119,6 +119,37 @@ class MarsBase:
                 return res
         return None
 
+    def get_location_info(self, world_x: float, world_y: float) -> Tuple[bool, str]:
+        """Determine whether the player is outside (EVA) or inside the habitat, and the zone title."""
+        mx = int(world_x / WORLD_SCALE)
+        my = int(world_y / WORLD_SCALE)
+
+        # 1. Check explicit exterior landmark zones
+        if mx <= 260 and my <= 200:
+            return True, "EVA Solar Farm // NW Crater"
+        if mx <= 230 and my >= 490:
+            return True, "EVA Rover Bay // SW Crater"
+        if mx >= 840 and my <= 400:
+            return True, "EVA East Airpad // Landing Site"
+        if my <= 120:
+            return True, "EVA North Dish // Crater Floor"
+        if my >= 610:
+            return True, "EVA South Plains // Jezero Surface"
+
+        # 2. Check background RGB color if red Martian regolith
+        if hasattr(self, "raw_surface") and 0 <= mx < self.raw_surface.get_width() and 0 <= my < self.raw_surface.get_height():
+            r, g, b = self.raw_surface.get_at((mx, my))[:3]
+            if r > 130 and g < 110 and b < 80 and (r - g) > 50:
+                return True, "EVA Mars Surface // Jezero Crater"
+
+        # 3. Check interior facility zones
+        for fac_id, info in self.facilities.items():
+            rect_tuple = info.get("rect", (0, 0, 50, 50))
+            if pygame.Rect(rect_tuple).collidepoint(int(world_x), int(world_y)):
+                return False, f"Habitat // {info.get('name', 'Interior')}"
+
+        return False, "Habitat Interior // Base Corridors"
+
     def check_foot_collision(self, world_x: float, world_y: float) -> bool:
         """Check if an entity's foot placement at (world_x, world_y) collides with a wall.
         

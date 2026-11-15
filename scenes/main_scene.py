@@ -107,22 +107,31 @@ class MainScene:
             elif act == "CLEAN_SOLAR_PANELS":
                 act_id = self.player.state.next_action_id("clean")
                 self.sync.dispatch_action("CLEAN_PANELS", {"method": "ROBOTIC_WIPER"}, action_id=act_id)
+                self.audio.play("success")
+                self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="spark")
                 res = self.mission_system.complete_mission_for_facility("solar_farm", self.world_state, self.player.state)
                 if res:
-                    self.audio.play("success")
-                    self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="spark")
                     self.floating_text.spawn(res[1], self.player.position.x, self.player.position.y - 35, color=(255, 220, 80), big=True)
                     self.player.state.set_action_feedback(f"{res[0]} // {res[1]}", True, duration=4.0)
+                else:
+                    self.floating_text.spawn("+15% Photovoltaic Efficiency", self.player.position.x, self.player.position.y - 35, color=(255, 220, 80), big=True)
+                    self.player.state.set_action_feedback("Solar Array Wiped // Basalt Regolith Cleared", True, duration=4.0)
 
             elif act == "EXCAVATE":
                 act_id = self.player.state.next_action_id("drill")
                 self.sync.dispatch_action("EXCAVATE", {"depth_m": 0.5}, action_id=act_id)
-                res = self.mission_system.complete_mission_for_facility("greenhouse", self.world_state, self.player.state)
-                if res:
-                    self.audio.play("success")
-                    self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="bio")
-                    self.floating_text.spawn(res[1], self.player.position.x, self.player.position.y - 35, color=(120, 255, 140), big=True)
-                    self.player.state.set_action_feedback(f"{res[0]} // {res[1]}", True, duration=4.0)
+                self.audio.play("beep")
+                if self.player.state.is_outside:
+                    self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="spark")
+                    self.floating_text.spawn("+15 kg Regolith Core! (+50 Science)", self.player.position.x, self.player.position.y - 35, color=(240, 180, 80), big=True)
+                    self.player.state.set_action_feedback("EVA Surface Drill // Subsurface Regolith Sample Extracted (+50 Sci)", True, duration=4.0)
+                else:
+                    res = self.mission_system.complete_mission_for_facility("greenhouse", self.world_state, self.player.state)
+                    if res:
+                        self.audio.play("success")
+                        self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="bio")
+                        self.floating_text.spawn(res[1], self.player.position.x, self.player.position.y - 35, color=(120, 255, 140), big=True)
+                        self.player.state.set_action_feedback(f"{res[0]} // {res[1]}", True, duration=4.0)
 
             elif act == "HABITAT_INTERACTION":
                 # Priority 1: Check nearby Crew NPC (Amal, Gowri, Christy)
@@ -184,12 +193,14 @@ class MainScene:
                         act_id = self.player.state.next_action_id("hab")
                         self.sync.dispatch_action(fac_act, {"facility_id": fac_id}, action_id=act_id)
 
+                    fac_mode = self.nearby_facility.get("challenge_mode", "CIRCUIT_SEQUENCE")
                     self.challenge_minigame.start_challenge(
                         facility_id=fac_id,
                         facility_name=fac_name,
                         objective=obj_text,
                         reward_desc=rew_text,
                         on_success_callback=on_facility_win,
+                        mode=fac_mode,
                     )
                     self.audio.play("beep")
                 else:
@@ -302,8 +313,11 @@ class MainScene:
         # 6. Camera follow tracking
         self.camera.update(self.player.position, dt)
 
-        # 7. Check facility proximity
+        # 7. Check facility proximity and outside/EVA environment status
         self.nearby_facility = self.mars_base.get_nearby_facility((self.player.position.x, self.player.position.y))
+        is_outside, loc_name = self.mars_base.get_location_info(self.player.position.x, self.player.position.y)
+        self.player.state.is_outside = is_outside
+        self.player.state.location_name = loc_name
 
         return True
 

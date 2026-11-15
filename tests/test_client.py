@@ -169,13 +169,8 @@ class TestMarsSurvivalClient(unittest.TestCase):
         base = MarsBase()
         player = Player(x=1000, y=840)
 
-        # Move down towards generator wall
-        for _ in range(60):
-            player.handle_input(0.0, 1.0)
-            player.update(0.016, base)
-
-        # Move left towards solid west wall
-        for _ in range(120):
+        # Move left towards solid west bulkhead wall until contact
+        for _ in range(350):
             player.handle_input(-1.0, 0.0)
             player.update(0.016, base)
 
@@ -603,6 +598,7 @@ class TestMarsSurvivalClient(unittest.TestCase):
             objective="Calibrate electrolysis cell",
             reward_desc="+25 kg O2",
             on_success_callback=on_win,
+            mode="SWEET_SPOT",
         )
         self.assertTrue(minigame.is_active)
 
@@ -620,6 +616,42 @@ class TestMarsSurvivalClient(unittest.TestCase):
         minigame.handle_key(pygame.K_SPACE, audio)
         self.assertEqual(minigame.locks_achieved, 3)
         self.assertTrue(success_called[0])
+        self.assertFalse(minigame.is_active)
+
+        # 7. Test Circuit Sequence QTE Minigame Mode
+        circuit_won = [False]
+        minigame.start_challenge(
+            facility_id="power_generator",
+            facility_name="Main Grid",
+            objective="Wire circuit breakers",
+            reward_desc="+30% Power",
+            on_success_callback=lambda: circuit_won.__setitem__(0, True),
+            mode="CIRCUIT_SEQUENCE",
+        )
+        self.assertEqual(minigame.mode, "CIRCUIT_SEQUENCE")
+        minigame.sequence = ["UP", "DOWN", "LEFT", "RIGHT", "UP"]
+        minigame.handle_key(pygame.K_UP, audio)
+        minigame.handle_key(pygame.K_s, audio)  # S matches DOWN
+        minigame.handle_key(pygame.K_LEFT, audio)
+        minigame.handle_key(pygame.K_d, audio)  # D matches RIGHT
+        minigame.handle_key(pygame.K_w, audio)  # W matches UP
+        self.assertTrue(circuit_won[0])
+        self.assertFalse(minigame.is_active)
+
+        # 8. Test Frequency Tuning Oscilloscope Mode
+        freq_won = [False]
+        minigame.start_challenge(
+            facility_id="comm_center",
+            facility_name="Comms",
+            objective="Tune transceiver",
+            reward_desc="Downlink Active",
+            on_success_callback=lambda: freq_won.__setitem__(0, True),
+            mode="FREQUENCY_TUNE",
+        )
+        minigame.target_freq = 4.0
+        minigame.player_freq = 4.1  # Within 0.45 tolerance
+        minigame.handle_key(pygame.K_SPACE, audio)
+        self.assertTrue(freq_won[0])
         self.assertFalse(minigame.is_active)
 
     def test_commander_suso_npcs_grid_challenges_and_collapsible_hud(self):
