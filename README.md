@@ -11,14 +11,6 @@ Developed for the NASA Space Apps Challenge (Kochi Local Event).
 
 ---
 
-## Author & Project Credits
-
-### Made by Lunarmist-byte
-* GitHub: https://github.com/Lunarmist-byte
-* LinkedIn: https://www.linkedin.com/in/amal-s-kumar-ba69a1290/
-
----
-
 ## 1. System Architecture
 
 The project is structured into two decoupled processes communicating over local networking:
