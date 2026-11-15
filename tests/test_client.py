@@ -282,12 +282,15 @@ class TestMarsSurvivalClient(unittest.TestCase):
         self.assertTrue(door.is_blocking())
         self.assertTrue(door.check_collision(500.0, 500.0))
 
-    def test_door_manager_integrated_with_mars_base(self):
-        """Verify MarsBase seamlessly manages all doors and renders without errors."""
-        base = MarsBase()
-        self.assertEqual(len(base.door_manager.doors), 12)
+    def test_door_manager_and_clean_mars_base(self):
+        """Verify DoorManager works standalone and MarsBase renders cleanly without door obstructions."""
+        from scenes.doors import DoorManager
+        dm = DoorManager()
+        self.assertEqual(len(dm.doors), 12)
+        dm.update(0.016, (1000.0, 840.0))
 
-        # Update doors with player at central spawn (1000, 840)
+        # MarsBase renders cleanly without door overlays
+        base = MarsBase()
         base.update(0.016, (1000.0, 840.0))
 
         # Verify rendering in camera space
@@ -318,7 +321,13 @@ class TestMarsSurvivalClient(unittest.TestCase):
         world_state.fractional_sol = 0.05  # Night
         anim.render(surf, world_state)
 
-        # 3. Active catastrophe visual effects
+        # 3. Active catastrophe visual effects & authentic dust particles
+        self.assertEqual(len(anim.particles), 350)
+        self.assertTrue(any(p.tier == 0 for p in anim.particles))
+        self.assertTrue(any(p.tier == 1 for p in anim.particles))
+        self.assertTrue(any(p.tier == 2 for p in anim.particles))
+        self.assertIsNotNone(anim.particle_surface)
+
         world_state.catastrophes = [
             {"type": "GLOBAL_DUST_STORM", "name": "Global Dust Storm", "severity": 0.9, "active": True},
             {"type": "SEVERE_MARSQUAKE", "name": "Severe Marsquake", "severity": 0.85, "screen_shake_intensity": 1.2, "active": True},
@@ -326,6 +335,8 @@ class TestMarsSurvivalClient(unittest.TestCase):
             {"type": "CRYOGENIC_FLASH_FREEZE", "name": "Flash Freeze", "severity": 0.9, "active": True},
             {"type": "HABITAT_HULL_BREACH", "name": "Hull Depressurization", "severity": 1.0, "active": True},
         ]
+        world_state.environment.dust_opacity_tau = 2.4
+        world_state.environment.wind_speed_m_s = 22.0
         anim.update(0.016, world_state)
         anim.render(surf, world_state)
 
@@ -518,6 +529,187 @@ class TestMarsSurvivalClient(unittest.TestCase):
         self.assertIsNotNone(res)
         self.assertIsNotNone(world_state.battery_soc)
         self.assertTrue(world_state.battery_soc >= 30.0)
+
+    def test_arcade_polish_and_challenge_minigames(self):
+        """Verify 2D platformer polish systems: low-g hops, audio synth, collectibles, and minigames."""
+        from systems.audio_synthesizer import SoundSynthesizer
+        from systems.particle_fx import ParticleFXSystem
+        from systems.floating_text import FloatingTextSystem
+        from systems.collectibles_system import CollectiblesSystem
+        from systems.facility_challenge_minigame import ChallengeMinigame
+        from systems.camera import Camera
+
+        # 1. Low-Gravity Hop & Footstep Cadence
+        player = Player(1000.0, 800.0)
+        self.assertEqual(player.movement.jump_z, 0.0)
+        hopped = player.hop()
+        self.assertTrue(hopped)
+        self.assertTrue(player.movement.jump_z > 0.0)
+        self.assertTrue(player.movement.jump_vz > 0.0)
+
+        # Advance physics arc to apex and landing
+        for _ in range(60):
+            player.movement.calculate_displacement(0.016)
+        self.assertEqual(player.movement.jump_z, 0.0)
+
+        # 2. Audio Synthesizer
+        audio = SoundSynthesizer()
+        self.assertTrue(audio.enabled)
+        self.assertIn("hop", audio.sounds)
+        self.assertIn("success", audio.sounds)
+        self.assertIn("pickup", audio.sounds)
+
+        # 3. Particle FX System
+        pfx = ParticleFXSystem()
+        pfx.spawn_footstep_puff(1000.0, 800.0, pygame.Vector2(1.0, 0.0))
+        pfx.spawn_landing_ring(1000.0, 800.0)
+        pfx.spawn_celebration_burst(1000.0, 800.0, particle_type="spark")
+        self.assertTrue(len(pfx.particles) > 20)
+        pfx.update(0.1)
+
+        cam = Camera(1280, 720, WORLD_WIDTH, WORLD_HEIGHT)
+        surf = pygame.Surface((1280, 720))
+        pfx.render(surf, cam)
+
+        # 4. Floating Text System
+        ftext = FloatingTextSystem()
+        ftext.spawn("+25 kg O2", 1000.0, 800.0, color=(100, 255, 140), big=True)
+        self.assertEqual(len(ftext.texts), 1)
+        ftext.update(0.1)
+        ftext.render(surf, cam)
+
+        # 5. Collectibles System
+        col = CollectiblesSystem()
+        self.assertEqual(len(col.artifacts), 6)
+        target_art = col.artifacts[0]
+        # Simulate walking over artifact
+        picked = col.update(0.1, pygame.Vector2(target_art.world_x, target_art.world_y))
+        self.assertIsNotNone(picked)
+        self.assertTrue(target_art.collected)
+        self.assertTrue(col.total_science_score > 0)
+        col.render(surf, cam)
+
+        # 6. Facility Challenge Minigame
+        minigame = ChallengeMinigame()
+        self.assertFalse(minigame.is_active)
+        success_called = [False]
+
+        def on_win():
+            success_called[0] = True
+
+        minigame.start_challenge(
+            facility_id="oxygen_plant",
+            facility_name="ECLSS MOXIE",
+            objective="Calibrate electrolysis cell",
+            reward_desc="+25 kg O2",
+            on_success_callback=on_win,
+        )
+        self.assertTrue(minigame.is_active)
+
+        # Force needle into target zone and achieve 3 locks
+        minigame.target_zone = (0.2, 0.8)
+        minigame.needle_pos = 0.5
+        minigame.handle_key(pygame.K_SPACE, audio)
+        self.assertEqual(minigame.locks_achieved, 1)
+
+        minigame.needle_pos = (minigame.target_zone[0] + minigame.target_zone[1]) / 2.0
+        minigame.handle_key(pygame.K_SPACE, audio)
+        self.assertEqual(minigame.locks_achieved, 2)
+
+        minigame.needle_pos = (minigame.target_zone[0] + minigame.target_zone[1]) / 2.0
+        minigame.handle_key(pygame.K_SPACE, audio)
+        self.assertEqual(minigame.locks_achieved, 3)
+        self.assertTrue(success_called[0])
+        self.assertFalse(minigame.is_active)
+
+    def test_commander_suso_npcs_grid_challenges_and_collapsible_hud(self):
+        """Verify Commander Suso, 3 Crew NPCs (Amal, Gowri, Christy), 20 Grid Challenge stations, and collapsible 8-bit HUD."""
+        from config import CREW_MEMBERS
+        from systems.npc_system import NPCSystem
+        from systems.grid_challenges import GridChallengeSystem
+        from ui.hud import HUD
+        from player.player import Player
+
+        # 1. Commander Suso verification (Player is Sprite 1, Commander Suso)
+        self.assertEqual(CREW_MEMBERS[1]["name"], "Commander Suso")
+        player = Player()
+        self.assertEqual(player.animation.character_id, 1)
+
+        # 2. Crew NPCs: Amal (Comms, 3), Gowri (Research Fellow, 2), Christy (Engineer, 4)
+        npcs = NPCSystem()
+        self.assertEqual(len(npcs.npcs), 3)
+        names = [npc.name for npc in npcs.npcs]
+        self.assertIn("Amal", names)
+        self.assertIn("Gowri", names)
+        self.assertIn("Christy", names)
+
+        # Verify NPC details and roles
+        amal = next(npc for npc in npcs.npcs if npc.name == "Amal")
+        self.assertEqual(amal.sprite_id, 3)
+        self.assertIn("Comms", amal.role)
+
+        gowri = next(npc for npc in npcs.npcs if npc.name == "Gowri")
+        self.assertEqual(gowri.sprite_id, 2)
+        self.assertIn("Research", gowri.role)
+
+        christy = next(npc for npc in npcs.npcs if npc.name == "Christy")
+        self.assertEqual(christy.sprite_id, 4)
+        self.assertIn("Engineer", christy.role)
+
+        # Test NPC interaction
+        talk_res = npcs.trigger_talk(pygame.Vector2(amal.world_x, amal.world_y))
+        self.assertIsNotNone(talk_res)
+        self.assertIn("Commander Suso", talk_res)
+
+        # 3. 20 Grid Challenge Stations & RAPID_TAP minigame mode
+        grid = GridChallengeSystem()
+        self.assertEqual(len(grid.stations), 20)
+        self.assertEqual(grid.total_completed, 0)
+
+        # Test Rapid Tap Minigame Mode
+        from systems.facility_challenge_minigame import ChallengeMinigame
+        mg = ChallengeMinigame()
+        tap_won = [False]
+        mg.start_challenge(
+            facility_id="st_potato_bed",
+            facility_name="Space Potatoes",
+            objective="Mash button",
+            reward_desc="+25 Rations",
+            on_success_callback=lambda: tap_won.__setitem__(0, True),
+            mode="RAPID_TAP",
+        )
+        self.assertEqual(mg.mode, "RAPID_TAP")
+        # Mash key 8 times
+        for _ in range(8):
+            mg.handle_key(pygame.K_SPACE)
+        self.assertTrue(tap_won[0])
+        self.assertFalse(mg.is_active)
+
+        # Complete a station
+        world_state = WorldState()
+        player_state = PlayerState()
+        res = grid.complete_station("st_moxie", world_state, player_state)
+        self.assertIsNotNone(res)
+        self.assertEqual(grid.total_completed, 1)
+        self.assertIsNotNone(world_state.oxygen_reserve)
+
+        # 4. Collapsible 8-Bit Minimal HUD
+        hud = HUD()
+        self.assertTrue(hud.is_collapsed, "HUD should be collapsed by default for 8-bit minimal view")
+        hud.toggle_collapse()
+        self.assertFalse(hud.is_collapsed)
+        hud.toggle_collapse()
+        self.assertTrue(hud.is_collapsed)
+
+        # Render minimal 8-bit HUD without errors
+        surf = pygame.Surface((1280, 720))
+        hud.render(
+            surface=surf,
+            world_state=world_state,
+            player_state=player_state,
+            backend_url="http://127.0.0.1:8000",
+            grid_challenges=grid,
+        )
 
 
 if __name__ == "__main__":

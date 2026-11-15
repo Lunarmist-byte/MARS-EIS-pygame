@@ -115,8 +115,15 @@ def main() -> int:
     pygame.init()
     pygame.font.init()
 
-    # Set window title and display surface
+    # Set window title, icon, and display surface
     pygame.display.set_caption(WINDOW_TITLE)
+    icon_path = "assets/characters/avatar_1.png"
+    if os.path.exists(icon_path):
+        try:
+            icon = pygame.image.load(icon_path)
+            pygame.display.set_icon(icon)
+        except Exception:
+            pass
     screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
 
     clock = pygame.time.Clock()

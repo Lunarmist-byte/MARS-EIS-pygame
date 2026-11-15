@@ -1,7 +1,7 @@
 """MARS SURVIVAL — Player Entity.
 
-Integrates movement controller, animation controller, and world state
-tracking into a unified Pygame player component.
+Integrates movement controller, low-gravity hop physics, animation controller,
+and world state tracking into a unified Pygame player component.
 
 Credit:
     Made by Lunarmist-byte
@@ -24,6 +24,7 @@ class Player:
     def __init__(self, x: float = DEFAULT_SPAWN_X, y: float = DEFAULT_SPAWN_Y) -> None:
         self.position = pygame.Vector2(x, y)
         self.movement = MovementController()
+        # Commander Suso (Sprite 1) is the primary playable mission commander
         self.animation = AnimationController(character_id=1)
         self.state = PlayerState(x=x, y=y)
 
@@ -32,18 +33,34 @@ class Player:
         self.height = 56
         self.radius = PLAYER_RADIUS
 
-    def switch_character(self, character_id: int) -> None:
-        """Switch active astronaut crew member."""
-        self.animation.load_crew_character(character_id)
-        self.state.set_action_feedback(f"Active Operator: Crew Member #{character_id}", True, duration=2.5)
+    def switch_character(self, character_id: int = 1) -> None:
+        """Switch active astronaut crew member.
+        
+        Commander Suso (Sprite 1) is the designated main player character;
+        Amal (Sprite 3), Gowri (Sprite 2), and Christy (Sprite 4) are living base NPCs.
+        """
+        # Commander Suso (Sprite 1) is the ONLY main player character
+        self.animation.load_crew_character(1)
+        if character_id == 2:
+            self.state.set_action_feedback("Gowri is in Research Lab // Commander Suso is Field Operator", True, duration=2.5)
+        elif character_id == 3:
+            self.state.set_action_feedback("Amal is at Comms Relays // Commander Suso is Field Operator", True, duration=2.5)
+        elif character_id == 4:
+            self.state.set_action_feedback("Christy is in Workshop // Commander Suso is Field Operator", True, duration=2.5)
+        else:
+            self.state.set_action_feedback("Commander Suso // Mission Commander", True, duration=2.5)
 
     @property
     def velocity(self) -> pygame.Vector2:
         return self.movement.velocity
 
-    def handle_input(self, dx: float, dy: float) -> None:
-        """Forward raw keyboard inputs (WASD / Arrows) to movement controller."""
-        self.movement.update_input(dx, dy)
+    def handle_input(self, dx: float, dy: float, sprint: bool = False) -> None:
+        """Forward raw keyboard inputs (WASD / Arrows) and sprint state to movement controller."""
+        self.movement.update_input(dx, dy, sprint=sprint)
+
+    def hop(self) -> bool:
+        """Trigger low-gravity Martian hop."""
+        return self.movement.start_jump()
 
     def update(self, dt: float, environment_or_rect: Any) -> Optional[Dict[str, Any]]:
         """Update player position, animations, state, and telemetry.
@@ -86,7 +103,7 @@ class Player:
         self.state.x = self.position.x
         self.state.y = self.position.y
         self.state.facing_direction = self.animation.facing_direction
-        self.state.current_action = "MOVING" if self.movement.velocity.length_squared() > 0 else "IDLE"
+        self.state.current_action = "HOPPING" if self.movement.jump_z > 0.0 else ("MOVING" if self.movement.velocity.length_squared() > 0 else "IDLE")
         self.state.update_timers(dt)
 
         # 4. Update animation controller
@@ -97,20 +114,23 @@ class Player:
         return telemetry
 
     def render(self, surface: pygame.Surface, camera: Any) -> None:
-        """Render character frame at camera-transformed screen coordinates."""
-        # Convert world position to screen viewport position
+        """Render character frame and dynamic shadow at camera-transformed screen coordinates."""
         screen_pos = camera.world_to_screen(self.position.x, self.position.y)
+        jump_z = self.movement.jump_z
 
-        # 1. Subtle ground shadow beneath astronaut
-        shadow_rect = pygame.Rect(0, 0, 24, 8)
-        shadow_rect.center = (int(screen_pos.x), int(screen_pos.y + self.height // 2 - 2))
-        shadow_surf = pygame.Surface((24, 8), pygame.SRCALPHA)
-        pygame.draw.ellipse(shadow_surf, (0, 0, 0, 80), (0, 0, 24, 8))
-        surface.blit(shadow_surf, shadow_rect.topleft)
+        # 1. Subtle ground shadow beneath astronaut (scales with hop elevation)
+        shadow_w = max(12, int(24 - jump_z * 0.22))
+        shadow_h = max(4, int(8 - jump_z * 0.08))
+        shadow_alpha = max(20, int(85 - jump_z * 0.9))
 
-        # 2. Main character frame
+        shadow_surf = pygame.Surface((shadow_w, shadow_h), pygame.SRCALPHA)
+        pygame.draw.ellipse(shadow_surf, (0, 0, 0, shadow_alpha), (0, 0, shadow_w, shadow_h))
+        surface.blit(shadow_surf, (int(screen_pos.x - shadow_w // 2), int(screen_pos.y + self.height // 2 - shadow_h // 2)))
+
+        # 2. Main character frame (elevated vertically by jump_z)
         frame = self.animation.get_current_frame()
-        frame_rect = frame.get_rect(center=(int(screen_pos.x), int(screen_pos.y)))
+        render_y = screen_pos.y - jump_z
+        frame_rect = frame.get_rect(center=(int(screen_pos.x), int(render_y)))
         surface.blit(frame, frame_rect.topleft)
 
     def get_world_rect(self) -> pygame.Rect:

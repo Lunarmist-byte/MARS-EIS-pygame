@@ -52,13 +52,13 @@ class InputHandler:
                     else:
                         should_quit = True
 
-                # Situation Modal Toggle
-                elif event.key in (pygame.K_t, pygame.K_F4):
-                    action_triggers.append("TOGGLE_SITUATIONS")
-
                 # Real-Time Live Feed Inspector Toggle
                 elif event.key == pygame.K_F5:
                     self.show_live_feed = not self.show_live_feed
+
+                # MARS-EIS Situation Injector / Catastrophe Scenarios Modal
+                elif event.key in (pygame.K_t, pygame.K_F4):
+                    action_triggers.append("TOGGLE_SITUATIONS")
 
                 # Interactive Action Triggers
                 elif event.key == pygame.K_e:
@@ -68,7 +68,7 @@ class InputHandler:
                 elif event.key == pygame.K_x:
                     action_triggers.append("EXCAVATE")
                 elif event.key == pygame.K_SPACE:
-                    action_triggers.append("MANUAL_ADVANCE")
+                    action_triggers.append("PLAYER_HOP")
 
                 # Character Crew Member Selection (1-4 or Tab)
                 elif event.key in (pygame.K_1, pygame.K_KP1):
@@ -83,6 +83,8 @@ class InputHandler:
                     action_triggers.append("CYCLE_CHAR")
 
                 # UI Toggles
+                elif event.key == pygame.K_h:
+                    action_triggers.append("TOGGLE_HUD")
                 elif event.key == pygame.K_F1:
                     self.show_help = not self.show_help
                 elif event.key == pygame.K_F2:
@@ -112,3 +114,8 @@ class InputHandler:
             dy += 1.0
 
         return dx, dy
+
+    def is_sprinting(self) -> bool:
+        """Check if Shift key is held for EVA sprint."""
+        keys = pygame.key.get_pressed()
+        return bool(keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT])

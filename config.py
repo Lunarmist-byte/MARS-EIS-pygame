@@ -146,11 +146,13 @@ ANIMATION_NAMES = [
 ]
 
 # Astronaut crew members from uploaded sprite sheet
+# Commander Suso (Sprite 1) is the sole playable field commander.
+# Amal (Sprite 3, Comms), Gowri (Sprite 2, Research Fellow), and Christy (Sprite 4, Engineer) are living station NPCs.
 CREW_MEMBERS = {
-    1: {"name": "Commander Amal", "role": "Mission Commander", "sprite_id": 1},
-    2: {"name": "Dr. Maya", "role": "Astrobiologist (ECLSS)", "sprite_id": 2},
-    3: {"name": "Alex", "role": "Chief Robotics Engineer", "sprite_id": 3},
-    4: {"name": "Vikram", "role": "Planetary Geologist", "sprite_id": 4},
+    1: {"name": "Commander Suso", "role": "Mission Commander", "sprite_id": 1},
+    2: {"name": "Gowri", "role": "Research Fellow (Astrobiology)", "sprite_id": 2},
+    3: {"name": "Amal", "role": "Communications Specialist", "sprite_id": 3},
+    4: {"name": "Christy", "role": "Chief Engineer", "sprite_id": 4},
 }
 
 # ==============================================================================

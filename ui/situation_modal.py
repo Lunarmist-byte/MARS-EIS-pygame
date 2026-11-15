@@ -77,7 +77,7 @@ class SituationModal:
         if self.feedback_timer > 0:
             self.feedback_timer -= dt
 
-    def handle_key(self, key: int, sync: Any) -> bool:
+    def handle_key(self, key: int, sync: Any, world_state: Optional[WorldState] = None) -> bool:
         """Handle numeric shortcut keys while modal is active. Returns True if handled."""
         if not self.is_open:
             return False
@@ -93,6 +93,22 @@ class SituationModal:
             if key == k:
                 sync.apply_scenario(scen_id)
                 self.set_feedback(f"Dispatched Scenario: {title} to MARS-EIS...", True)
+                if world_state:
+                    if scen_id == "global_dust_storm_2018":
+                        world_state.catastrophes = [
+                            {"type": "GLOBAL_DUST_STORM", "name": "2018 Global Dust Storm", "severity": 0.95, "active": True}
+                        ]
+                        world_state.environment.dust_opacity_tau = 2.45
+                        world_state.environment.wind_speed_m_s = 24.0
+                        world_state.environment.wind_direction_deg = 135.0
+                    elif scen_id == "nominal_jezero_spring":
+                        world_state.catastrophes.clear()
+                        world_state.environment.dust_opacity_tau = 0.35
+                        world_state.environment.wind_speed_m_s = 6.0
+                    elif scen_id == "insight_marsquake_seismic":
+                        world_state.catastrophes = [
+                            {"type": "SEVERE_MARSQUAKE", "name": "Cerberus Fossae Marsquake", "severity": 0.90, "screen_shake_intensity": 1.4, "active": True}
+                        ]
                 return True
 
         # Check Catastrophes (6-9, 0)
@@ -101,6 +117,24 @@ class SituationModal:
             if key == k:
                 sync.trigger_catastrophe(cat_type, severity=0.85)
                 self.set_feedback(f"Injected Catastrophe: {title} into MARS-EIS!", False)
+                if world_state:
+                    if cat_type == "GLOBAL_DUST_STORM":
+                        world_state.catastrophes = [
+                            {"type": "GLOBAL_DUST_STORM", "name": "Global Dust Storm Blackout", "severity": 0.95, "duration": 18.0, "active": True}
+                        ]
+                        world_state.environment.dust_opacity_tau = 2.5
+                        world_state.environment.wind_speed_m_s = 25.0
+                    else:
+                        world_state.catastrophes = [
+                            {
+                                "type": cat_type,
+                                "name": title,
+                                "severity": 0.85,
+                                "duration": 18.0,
+                                "screen_shake_intensity": 1.3 if "MARSQUAKE" in cat_type else 0.0,
+                                "active": True
+                            }
+                        ]
                 return True
 
         return False

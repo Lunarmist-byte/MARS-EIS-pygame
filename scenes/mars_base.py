@@ -40,9 +40,6 @@ class MarsBase:
         # Facility landmarks configuration
         self.facilities = BASE_FACILITIES
 
-        # Automated blast doors & airlocks
-        self.door_manager = DoorManager()
-
         # Load and scale background with strict aspect ratio preservation
         self._load_environment_art()
         self._load_collision_mask()
@@ -83,11 +80,11 @@ class MarsBase:
         self.world_rect = pygame.Rect(0, 0, target_w, target_h)
 
     def update(self, dt: float, player_pos: Tuple[float, float]) -> None:
-        """Update automated base doors against player position."""
-        self.door_manager.update(dt, player_pos)
+        """Update base environment components."""
+        pass
 
     def render(self, surface: pygame.Surface, camera: Camera) -> None:
-        """Render background and automated doors relative to camera viewport."""
+        """Render original base background relative to camera viewport."""
         # Calculate sub-rectangle visible within the camera view
         view_rect = camera.get_view_rect()
         
@@ -101,9 +98,6 @@ class MarsBase:
             dest_x = clipped_rect.x - camera.offset_x
             dest_y = clipped_rect.y - camera.offset_y
             surface.blit(sub, (dest_x, dest_y))
-
-        # Render automated blast doors and airlocks
-        self.door_manager.render(surface, camera)
 
     def get_nearby_facility(
         self,
@@ -126,19 +120,15 @@ class MarsBase:
         return None
 
     def check_foot_collision(self, world_x: float, world_y: float) -> bool:
-        """Check if an entity's foot placement at (world_x, world_y) collides with a wall or closed door.
+        """Check if an entity's foot placement at (world_x, world_y) collides with a wall.
         
-        Uses the high-precision 1-bit collision mask scaled to world space and checks closed blast doors.
-        Returns True if the foot position intersects a solid wall or closed door.
+        Uses the high-precision 1-bit collision mask scaled to world space.
+        Returns True only if the foot position intersects a solid wall.
         """
-        # 1. Check if blocked by any closed blast door
-        foot_y = world_y + 18.0
-        if hasattr(self, "door_manager") and self.door_manager.check_collision(world_x, foot_y):
-            return True
-
         if not self.collision_mask:
             return False
 
+        foot_y = world_y + 18.0
         # Convert world coordinates (2048 x 1364) to mask space (1024 x 682)
         mx = world_x / WORLD_SCALE
         # Astronaut feet are located near the bottom of the sprite (+18px offset in world space)

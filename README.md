@@ -101,7 +101,48 @@ pygame/
 * **Preservation of Original Artwork:** Uses the original `mars_base_background.jpg` (1024 $\times$ 682 px). The aspect ratio ($\approx 1.5015$) is strictly preserved.
 * **World Scaling:** With a configurable `WORLD_SCALE = 2.0`, the world dimensions expand to $2048 \times 1364$ world coordinates, creating a large, explorable base perimeter.
 * **Camera System:** The camera smoothly tracks the player's world position and clamps to the world bounds, ensuring that no void or black borders outside the map are ever rendered.
-* **Wall Collision & Solid Boundaries:** A 1-bit high-precision collision mask ([assets/backgrounds/mars_base_collision_mask.png](file:///c:/Users/amals/Documents/Codeworks/pygame/assets/backgrounds/mars_base_collision_mask.png)) actively bounds the player. Solid base hull walls, interior room partitions, consoles, and heavy equipment block movement. Axis-separated movement allows smooth sliding along walls, while all 11 doorways and exterior exits remain completely accessible.
+* **Wall Collision & Solid Boundaries:** A 1-bit high-precision collision mask ([assets/backgrounds/mars_base_collision_mask.png](file:///c:/Users/amals/Documents/Codeworks/pygame/assets/backgrounds/mars_base_collision_mask.png)) actively bounds the player. Solid exterior hull walls, interior room partitions, consoles, and heavy equipment block movement. Axis-separated movement allows smooth sliding along walls.
+* **100% Walkable Corridors to All Rooms:** All corridors connecting the central rotunda to the 9 facility rooms (Oxygen Generation, Water Recycling, Greenhouse Hydroponics, Solar Array, Nuclear Reactor, Power Generator, Medbay, Robotics Workshop, and Comms Center) and external airlocks are carved open and 100% walkable with zero blocked bottlenecks.
+* **Original Martian Catastrophe Dust Particles:** Features a multi-tiered, authentic ferric oxide dust particle engine rendered with true per-pixel alpha blending onto a dedicated translucent surface. Ambient conditions maintain a subtle, elegant atmospheric suspension; triggering a catastrophe (e.g. `[T / F4]` $\rightarrow$ `1` or `6`) unleashes up to 350 particles with dynamic wind streaks, organic sinusoidal eddy curls, atmospheric Mie scattering dust veils, and physical camera screen-shake.
+
+---
+
+## 4. 2D Platformer Polish & Interactive Challenge Systems
+
+The game features comprehensive arcade/platformer-level responsiveness, game feel "juice", and interactive minigames:
+
+### Game Feel & Tactile Movement Polish
+* **Low-Gravity Martian Hop (`[Space]`):** Mars surface gravity ($0.38g$) allows floaty, parabolic EVA hops with dynamic vertical sprite displacement ($z(t)$) and ground shadow scaling that shrinks smoothly with elevation.
+* **EVA Sprint & Cold Gas Thrusters (`[Shift]`):** Hold Shift to engage astronaut EVA thrusters for a $1.45\times$ speed boost, accompanied by animated cyan vapor plume particles.
+* **Boot Regolith Footstep Puffs:** Walking or running kicks up subtle ferric regolith dust puffs in the opposite direction of motion, giving tangible ground traction and weight.
+* **Landing Shockwave Rings:** Landing from a low-gravity hop spawns a 360-degree dust displacement ring with landing audio feedback.
+* **Procedural Arcade Audio Synthesizer:** Pure Python mathematical sound generation via `pygame.mixer` (footstep taps, low-g liftoff sweeps, terminal interaction beeps, pickup musical arpeggios, and challenge victory fanfares).
+
+### Interactive Facility Calibration Minigames
+Entering a facility and pressing **`[E]`** opens the interactive calibration HUD:
+* **Sweet-Spot Resonance Bar:** A dynamic oscillating needle moves across an animated calibration track.
+* **Target Timing Zone:** Press `[Space]` or `[E]` when the needle enters the green resonance sweet spot.
+* **Lock Progression:** Secure 3 successful alignment locks before the 20-second timer expires to successfully calibrate the facility.
+* **Victory Celebration:** Winning triggers arpeggiated audio fanfares, bursts of facility-specific celebration particles (cyan oxygen vapor, blue water mist, green bio-spores, or electric sparks), and floating reward text popups (`+25.0 kg OXYGEN!`).
+
+### Collectible Martian Science Artifacts
+6 collectible geological and technological artifacts are scattered across Jezero Base:
+1. **Ancient Jezero Olivine Crystal** (+100 pts)
+2. **Chondritic Nickel-Iron Meteorite** (+150 pts)
+3. **Subsurface Perchlorate Ice Core** (+120 pts)
+4. **NASA Rover Telemetry Cache** (+200 pts)
+5. **Sedimentary Delta Mudstone Shard** (+180 pts)
+6. **Experimental Perovskite PV Cell** (+110 pts)
+* Features vertical floating bob animations and glowing pulse auras.
+* Walking over a sample collects it with a musical chime and floating `+100 SCIENCE!` text.
+
+### Base Survival Efficiency Rating & Arcade Grade
+The HUD continuously calculates overall base survival readiness:
+$$\text{Readiness Score} = \frac{\text{O}_2 + \text{H}_2\text{O} + \text{Food} + \text{Battery} + \text{Solar Eff}}{5}$$
+* **GRADE S (OPTIMAL 90%+):** High-efficiency fully restored life-support.
+* **GRADE A (STABLE 70%+):** Safe operational margins.
+* **GRADE B (MODERATE 50%+):** Depleting stores requiring crew intervention.
+* **GRADE C (VULNERABLE <50%):** Critical ECLSS failure threat.
 
 ---
 
@@ -113,13 +154,18 @@ pygame/
 * **Delta-Time Physics:** Movement displacement is multiplied by `dt` from `pygame.time.Clock.tick()`, maintaining consistent movement speed regardless of monitor refresh rate or frame fluctuations.
 * **Telemetry Reporting:** Movement is accumulated and periodically dispatched to the backend (minimum every 1.0s or 2.0m) to calculate regolith disturbance and dust mobilization without spamming the network every frame.
 
-### Animation Controller & Character Selection
-* **Active Crew Members from Uploaded Sprites:**
-  * **Crew #1:** Commander Amal (Mission Commander / Systems Architect)
-  * **Crew #2:** Dr. Maya (Chief Astrobiologist & ECLSS Specialist)
-  * **Crew #3:** Alex (Chief Robotics & Electrical Engineer)
-  * **Crew #4:** Vikram (Planetary Geologist & Core Drill Operator)
-* **Switching Characters:** Press `1`, `2`, `3`, `4` or `Tab` to switch between active astronaut crew members on the fly.
+### Active Crew & Living NPCs from Uploaded Sprites:
+* **Primary Operator (Playable Character):** **Commander Suso** (Sprite 1 — Glasses & mustache, Mission Commander & Systems Architect)
+* **Living Crew NPCs (Stationed across the Base):**
+  * **Amal** (Sprite 3 — Bearded astronaut with thick wavy dark hair, Communications Specialist) — Located at Deep Space Telemetry & Comms Center (`[E]` Talk)
+  * **Gowri** (Sprite 2 — Smiling astronaut with bindi, Research Fellow in Astrobiology) — Located in Hydroponic Greenhouse & Medbay (`[E]` Talk)
+  * **Christy** (Sprite 4 — Wavy hair & goatee, Chief Robotics & Electrical Engineer) — Located in Robotics Workshop & Reactor (`[E]` Talk)
+* **Interactive Dialogue System:** Approaching any crew NPC and pressing `[E]` opens an 8-bit dialogue box featuring their custom face portrait and station guidance.
+* **20 Random & Fun Grid Challenge Stations:** Interactive terminals marked with pulsing `[ ★ ]` (Ready) and `[ ✓ ]` (Completed) scattered in rooms, crates, dishes, rovers, and outdoor pads:
+  * **Precision Timing (`SWEET_SPOT`):** Needle resonance alignment (MOXIE O2, Reactor Muon Trap, Alien SETI Beacon, Asteroid Blaster, Robo Fist Bump, Water Geyser).
+  * **Rapid Mashing (`RAPID_TAP`):** High-speed button-mashing frenzy (Mark Watney Space Potatoes, NASA Supply Loot Crate, Tool Chest Pry, Atmospheric Thermal Kite, Rover Turbo Jumpstart).
+* **Collapsible 8-Bit Minimal HUD:** Press `[H]` to toggle between an unobstructed minimal 8-bit ribbon and expanded detailed telemetry.
+* **100% Unobstructed Walkability:** Exterior pathways, airlocks, solar panel fields, rover bay, and east landing pad are completely unblocked and walkable.
 * **Prepared Animation Names:**
   * `idle` (Standing still)
   * `walk_down` (Walking downward)
@@ -205,22 +251,21 @@ python tests\test_client.py
 
 | Key | Action |
 |---|---|
-| `W` / `Up` | Walk Up |
-| `S` / `Down` | Walk Down |
-| `A` / `Left` | Walk Left |
-| `D` / `Right` | Walk Right (horizontal flip) |
-| `1`, `2`, `3`, `4` | Select Astronaut Crew Member (Amal, Maya, Alex, Vikram) |
-| `Tab` | Cycle Next Crew Member |
-| `E` | Contextual Habitat Interaction / Inspect |
-| `C` | Clean Solar Panels (`CLEAN_PANELS`) |
+| `W`, `A`, `S`, `D` / Arrows | 8-Directional Normalized Movement |
+| `Shift` (Hold) | EVA Sprint / Cold Gas Thruster Boost ($1.45\times$ speed) |
+| `Space` | Low-Gravity Martian Hop ($0.38g$ float arc & landing ring) |
+| `E` | Engage Facility Interactive Challenge Minigame |
+| `C` | Clean Solar Panels (`CLEAN_PANELS` + Mission completion) |
 | `X` | Subsurface Regolith Excavation (`EXCAVATE`) |
-| `Space` | Step Simulation Clock (+10s) |
+| `1`, `2`, `3`, `4` | Station Check (Amal = Comms, Gowri = Research, Suso = Commander, Christy = Engineer) |
+| `Tab` | Cycle Next Crew Member |
+| `H` | Toggle Collapsible 8-Bit Minimalist HUD / Full Telemetry |
 | `T` / `F4` | Toggle MARS-EIS Situation Injector (Scenarios & Catastrophes) |
 | `F5` | Toggle Real-Time WebSocket Live Feed Monitor Overlay |
 | `F1` | Toggle System Help & Manual Overlay |
 | `F2` | Force Immediate Reconnect to MARS-EIS |
 | `F3` | Toggle Debug Telemetry Overlay |
-| `Esc` | Exit Game / Close Overlays |
+| `Esc` | Exit Game / Abort Challenge / Close Overlays |
 
 ---
 
