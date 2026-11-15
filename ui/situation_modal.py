@@ -120,7 +120,7 @@ class SituationModal:
                 if world_state:
                     if cat_type == "GLOBAL_DUST_STORM":
                         world_state.catastrophes = [
-                            {"type": "GLOBAL_DUST_STORM", "name": "Global Dust Storm Blackout", "severity": 0.95, "duration": 18.0, "active": True}
+                            {"type": "GLOBAL_DUST_STORM", "name": "Global Dust Storm Blackout", "severity": 0.95, "duration": 15.0, "active": True}
                         ]
                         world_state.environment.dust_opacity_tau = 2.5
                         world_state.environment.wind_speed_m_s = 25.0
@@ -130,7 +130,7 @@ class SituationModal:
                                 "type": cat_type,
                                 "name": title,
                                 "severity": 0.85,
-                                "duration": 18.0,
+                                "duration": 15.0,
                                 "screen_shake_intensity": 1.3 if "MARSQUAKE" in cat_type else 0.0,
                                 "active": True
                             }

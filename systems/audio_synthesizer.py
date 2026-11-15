@@ -43,6 +43,20 @@ class SoundSynthesizer:
         self.sounds["success"] = self._create_chime_sound([440.0, 554.37, 659.25, 880.0], note_dur=0.12, volume=0.45)
         self.sounds["fail"] = self._create_sweep_sound(260.0, 110.0, duration=0.22, wave_type="sawtooth", volume=0.35)
         self.sounds["thruster"] = self._create_noise_puff(duration=0.15, volume=0.20)
+        self.sounds["alarm"] = self._create_siren(duration=0.55, volume=0.35)
+
+    def _create_siren(self, duration: float = 0.55, volume: float = 0.35) -> pygame.mixer.Sound:
+        """Synthesize two-tone rising emergency klaxon siren."""
+        num_samples = int(self.sample_rate * duration)
+        samples = bytearray()
+        for i in range(num_samples):
+            t = float(i) / self.sample_rate
+            # 4Hz frequency modulation between 520Hz and 880Hz
+            freq = 680.0 + 180.0 * math.sin(2.0 * math.pi * 3.5 * t)
+            val = 0.8 * (1.0 if math.sin(2.0 * math.pi * freq * t) >= 0 else -1.0)
+            sample_int = int(val * volume * 32767.0)
+            samples.extend(struct.pack("<hh", sample_int, sample_int))
+        return pygame.mixer.Sound(buffer=bytes(samples))
 
     def _create_tone(self, freq: float, duration: float, wave_type: str = "sine", volume: float = 0.3) -> pygame.mixer.Sound:
         """Synthesize a single frequency tone."""

@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — 8-Bit Retro Heads-Up Display (HUD).
+"""DUSTFALL — 8-Bit Retro Heads-Up Display (HUD).
 
 Clean, crisp 8-bit arcade telemetry interface with zero fluff:
 - Collapsible info panels ([H] Toggle Full Telemetry / Minimal 8-Bit Mode)
@@ -148,6 +148,18 @@ class HUD:
         hp_surf = font.render(f"[ HP: {player_state.health:.0f}% ]", True, hp_col)
         surface.blit(hp_surf, (curr_x, bar_rect.y + 7))
         curr_x += hp_surf.get_width() + 10
+
+        # [ SPACE HEALTH: 100% ]
+        sh_val = getattr(world_state, "station_health", 100.0)
+        cd_val = getattr(world_state, "collapse_countdown", 90.0)
+        cd_m = int(cd_val // 60)
+        cd_s = int(cd_val % 60)
+        cd_str = f"{cd_m:02d}:{cd_s:02d}"
+        sh_col = COLOR_NOMINAL if sh_val >= 90 else (COLOR_WARNING if sh_val >= 50 else COLOR_CRITICAL)
+        sh_label = f"[ SPACE: {sh_val:.0f}% ]" if sh_val >= 100 else f"[ ⚠ SPACE: {sh_val:.0f}% | DIE IN: {cd_str} ]"
+        sh_surf = font.render(sh_label, True, sh_col)
+        surface.blit(sh_surf, (curr_x, bar_rect.y + 7))
+        curr_x += sh_surf.get_width() + 10
 
         # [ O2: 70kg ]
         o2_val = f"{world_state.oxygen_reserve:.1f}kg" if world_state.oxygen_reserve is not None else "N/A"
@@ -374,16 +386,43 @@ class HUD:
         surface.blit(hdr, (panel_rect.x + 8, panel_rect.y + 8))
 
         cats = world_state.catastrophes
-        curr_y = panel_rect.y + 28
-        if cats:
-            for c in cats[:2]:
-                c_name = c.get("name", c.get("type", "Catastrophe"))
-                s = font_txt.render(f"ALERT: {c_name}", True, COLOR_CRITICAL)
+        curr_y = panel_rect.y + 24
+        sh_val = getattr(world_state, "station_health", 100.0)
+        cd_val = getattr(world_state, "collapse_countdown", 60.0)
+
+        if cats or sh_val < 100.0:
+            if cats:
+                for c in cats[:1]:
+                    c_name = c.get("name", c.get("type", "Catastrophe"))
+                    s = font_txt.render(f"ALERT: {c_name}", True, COLOR_CRITICAL)
+                    surface.blit(s, (panel_rect.x + 8, curr_y))
+                    curr_y += 14
+            else:
+                s = font_txt.render("ALERT: BASE DAMAGE DETECTED", True, COLOR_WARNING)
                 surface.blit(s, (panel_rect.x + 8, curr_y))
-                curr_y += 16
+                curr_y += 14
+
+            cd_m = int(cd_val // 60)
+            cd_s = int(cd_val % 60)
+            cd_str = f"{cd_m:02d}:{cd_s:02d}"
+            cd_col = (255, 60, 60) if cd_val < 25 else (255, 180, 40)
+            cd_txt = font_txt.render(f"COLLAPSE TIMEOUT: {cd_str} [REPAIR NOW]", True, cd_col)
+            surface.blit(cd_txt, (panel_rect.x + 8, curr_y))
+            curr_y += 13
+
+            # Mini health bar
+            bar_w = 160
+            bar_h = 5
+            fill_w = int(bar_w * (sh_val / 100.0))
+            pygame.draw.rect(surface, (30, 40, 50), (panel_rect.x + 8, curr_y + 2, bar_w, bar_h))
+            sh_col = COLOR_WARNING if sh_val >= 50 else COLOR_CRITICAL
+            pygame.draw.rect(surface, sh_col, (panel_rect.x + 8, curr_y + 2, fill_w, bar_h))
         else:
             nom = font_txt.render("NOMINAL // No active hazards or storm alerts.", True, COLOR_NOMINAL)
             surface.blit(nom, (panel_rect.x + 8, curr_y))
+            curr_y += 16
+            sh_txt = font_txt.render(f"Space Health: {sh_val:.0f}% [HABITAT SECURE]", True, COLOR_NOMINAL)
+            surface.blit(sh_txt, (panel_rect.x + 8, curr_y))
 
     def _render_player_panel(
         self,
@@ -443,7 +482,7 @@ class HUD:
         font_large = FontManager.get(14, bold=True)
         font_small = FontManager.get(11)
 
-        surface.blit(font_large.render("MARS SURVIVAL // SYSTEM MANUAL & SHORTCUTS", True, (0, 229, 255)), (rect.x + 16, rect.y + 14))
+        surface.blit(font_large.render("DUSTFALL // SYSTEM MANUAL & SHORTCUTS", True, (0, 229, 255)), (rect.x + 16, rect.y + 14))
 
         shortcuts = [
             ("WASD / Arrows", "8-Directional Normalized Astronaut Movement"),

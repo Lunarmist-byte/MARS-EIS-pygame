@@ -356,7 +356,29 @@ class GridChallengeSystem:
             cur = world_state.power_generation_w if world_state.power_generation_w is not None else 2500.0
             world_state.power_generation_w = cur + st.stat_boost
 
+        # Restore space / station health towards 100%
+        world_state.station_health = min(100.0, round(world_state.station_health + 20.0, 1))
+
         return (st.name, st.reward_desc)
+
+    def reset_for_catastrophe(self, affected_types: Optional[List[str]] = None) -> int:
+        """Reset completed challenges back to pending state so player can repair the base."""
+        reset_count = 0
+        for s in self.stations:
+            if affected_types is None or s.stat_type in affected_types:
+                if s.completed:
+                    s.completed = False
+                    reset_count += 1
+            elif not affected_types and s.completed:
+                s.completed = False
+                reset_count += 1
+
+        # If all were already uncompleted, ensure at least half are available
+        if reset_count == 0:
+            for s in self.stations:
+                s.completed = False
+                reset_count += 1
+        return reset_count
 
     def update(self, dt: float) -> None:
         self.anim_time += dt

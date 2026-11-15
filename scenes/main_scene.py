@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — Main Scene Coordinator.
+"""DUSTFALL — Main Scene Coordinator.
 
 Orchestrates 2D platformer-level gameplay polish:
 - Player (Commander Suso) with low-gravity hops and EVA sprint
@@ -32,6 +32,7 @@ from systems.collectibles_system import CollectiblesSystem
 from systems.facility_challenge_minigame import ChallengeMinigame
 from systems.npc_system import NPCSystem
 from systems.grid_challenges import GridChallengeSystem
+from systems.catastrophe_manager import CatastropheDirector
 from scenes.mars_base import MarsBase
 from ui.hud import HUD
 from ui.components import UIComponents
@@ -81,6 +82,22 @@ class MainScene:
         # Crew NPCs (Amal, Gowri, Christy) & 20 Grid Challenge Stations
         self.npc_system = NPCSystem()
         self.grid_challenges = GridChallengeSystem()
+
+        # Procedural Catastrophe Director & Emergency Evacuation Manager
+        self.catastrophe_director = CatastropheDirector(
+            world_state=self.world_state,
+            audio=self.audio,
+            npc_system=self.npc_system,
+            grid_challenges=self.grid_challenges,
+            mission_system=self.mission_system,
+            particle_fx=self.particle_fx,
+            floating_text=self.floating_text,
+            sync=self.sync,
+            initial_delay=300.0,  # Catastrophe happens once every 5 minutes (300s)
+        )
+
+        # Start game during initial Ferric Dust Storm with NPCs inside wandering randomly
+        self.catastrophe_director.trigger_catastrophe("GLOBAL_DUST_STORM", self.player.position)
 
         self.nearby_facility: Optional[Dict[str, Any]] = None
 
@@ -151,11 +168,15 @@ class MainScene:
 
                     def on_station_win() -> None:
                         res = self.grid_challenges.complete_station(st_id, self.world_state, self.player.state)
+                        self.catastrophe_director.notify_repair_progress()
                         self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type="spark")
                         if res:
                             name, reward = res
                             self.floating_text.spawn(reward, self.player.position.x, self.player.position.y - 45, color=(100, 255, 160), big=True)
-                            self.player.state.set_action_feedback(f"CHALLENGE WON: {reward}", True, duration=4.0)
+                            self.floating_text.spawn(f"+20% SPACE HEALTH! (Integrity: {self.world_state.station_health:.0f}%)", self.player.position.x, self.player.position.y - 70, color=(0, 255, 200), big=True)
+                            self.player.state.set_action_feedback(f"CHALLENGE WON: {reward} // Space Health: {self.world_state.station_health:.0f}%", True, duration=4.0)
+                            if self.world_state.station_health >= 100.0:
+                                self.catastrophe_director.update(0.0, self.player.position)
 
                     self.challenge_minigame.start_challenge(
                         facility_id=st_id,
@@ -184,12 +205,16 @@ class MainScene:
 
                     def on_facility_win() -> None:
                         res = self.mission_system.complete_mission_for_facility(fac_id, self.world_state, self.player.state)
+                        self.catastrophe_director.notify_repair_progress()
                         p_type = "oxygen" if "oxygen" in fac_id else ("water" if "water" in fac_id else ("bio" if "greenhouse" in fac_id else "spark"))
                         self.particle_fx.spawn_celebration_burst(self.player.position.x, self.player.position.y, particle_type=p_type)
                         if res:
                             fb, reward = res
                             self.floating_text.spawn(reward, self.player.position.x, self.player.position.y - 45, color=(100, 255, 160), big=True)
-                            self.player.state.set_action_feedback(f"MISSION SUCCESS: {reward}", True, duration=4.0)
+                            self.floating_text.spawn(f"+25% SPACE HEALTH! (Integrity: {self.world_state.station_health:.0f}%)", self.player.position.x, self.player.position.y - 70, color=(0, 255, 200), big=True)
+                            self.player.state.set_action_feedback(f"MISSION SUCCESS: {reward} // Space Health: {self.world_state.station_health:.0f}%", True, duration=4.0)
+                            if self.world_state.station_health >= 100.0:
+                                self.catastrophe_director.update(0.0, self.player.position)
                         act_id = self.player.state.next_action_id("hab")
                         self.sync.dispatch_action(fac_act, {"facility_id": fac_id}, action_id=act_id)
 
@@ -240,12 +265,36 @@ class MainScene:
 
     def update(self, dt: float) -> bool:
         """Frame update cycle. Returns False if game should exit."""
+        # 0. Check if Mission Failed / Game Over state is active
+        if self.catastrophe_director.is_game_over:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    return False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self.catastrophe_director.restart(self.player.position)
+                        self.player.state.health = 100.0
+                    elif event.key == pygame.K_ESCAPE:
+                        return False
+            return True
+
         # 1. Process Pygame events and user input
         def modal_handler(k: int) -> bool:
             if self.challenge_minigame.is_active:
                 return self.challenge_minigame.handle_key(k, self.audio)
             if self.situation_modal.is_open:
-                return self.situation_modal.handle_key(k, self.sync, self.world_state)
+                handled = self.situation_modal.handle_key(k, self.sync, self.world_state)
+                if handled and k in (pygame.K_6, pygame.K_7, pygame.K_8, pygame.K_9, pygame.K_0):
+                    key_map = {
+                        pygame.K_6: "GLOBAL_DUST_STORM",
+                        pygame.K_7: "SEVERE_MARSQUAKE",
+                        pygame.K_8: "SOLAR_PARTICLE_EVENT",
+                        pygame.K_9: "CRYOGENIC_FLASH_FREEZE",
+                        pygame.K_0: "HABITAT_HULL_BREACH",
+                    }
+                    if k in key_map:
+                        self.catastrophe_director.trigger_catastrophe(key_map[k], self.player.position)
+                return handled
             return False
 
         should_quit, action_triggers = self.input_handler.process_events(modal_key_handler=modal_handler)
@@ -258,15 +307,8 @@ class MainScene:
         # 3. Synchronize with background simulation worker (non-blocking)
         self.sync.poll_results(self.world_state, self.player.state)
 
-        # Auto-expire active catastrophes after duration so they never linger forever
-        if self.world_state.catastrophes:
-            active_cats = []
-            for c in self.world_state.catastrophes:
-                dur = c.get("duration", 18.0) - dt
-                c["duration"] = dur
-                if dur > 0:
-                    active_cats.append(c)
-            self.world_state.catastrophes = active_cats
+        # 4. Update procedural Catastrophe Director (random catastrophes, NPC shelter evacuation, Space Health)
+        self.catastrophe_director.update(dt, self.player.position)
 
         # Update modal and minigame timers
         self.situation_modal.update(dt)
@@ -381,3 +423,57 @@ class MainScene:
 
         # 12. Render interactive facility challenge minigame when active
         self.challenge_minigame.render(surface)
+
+        # 13. Render Game Over overlay if crew died / failed
+        if self.catastrophe_director.is_game_over:
+            self._render_game_over(surface)
+
+    def _render_game_over(self, surface: pygame.Surface) -> None:
+        """Render retro arcade Game Over / Mission Failed death screen."""
+        from ui.font_manager import FontManager
+
+        overlay = pygame.Surface((WINDOW_WIDTH, WINDOW_HEIGHT), pygame.SRCALPHA)
+        overlay.fill((14, 4, 6, 235))
+        surface.blit(overlay, (0, 0))
+
+        box_w = 760
+        box_h = 320
+        box_x = (WINDOW_WIDTH - box_w) // 2
+        box_y = (WINDOW_HEIGHT - box_h) // 2
+        box_rect = pygame.Rect(box_x, box_y, box_w, box_h)
+
+        pygame.draw.rect(surface, (20, 8, 10), box_rect)
+        pygame.draw.rect(surface, (255, 60, 60), box_rect, width=3)
+        pygame.draw.rect(surface, (180, 40, 40), (box_x + 4, box_y + 4, box_w - 8, box_h - 8), width=1)
+
+        font_big = FontManager.get(20, bold=True)
+        font_med = FontManager.get(13, bold=True)
+        font_body = FontManager.get(11)
+
+        title = font_big.render("☠  MISSION FAILED // EXPEDITION LOST  ☠", True, (255, 60, 60))
+        surface.blit(title, (box_x + (box_w - title.get_width()) // 2, box_y + 24))
+
+        sub = font_med.render("ALL CREW MEMBERS PERISHED ON MARS", True, (255, 180, 80))
+        surface.blit(sub, (box_x + (box_w - sub.get_width()) // 2, box_y + 64))
+
+        pygame.draw.line(surface, (150, 40, 40), (box_x + 40, box_y + 96), (box_x + box_w - 40, box_y + 96), 1)
+
+        desc1 = font_body.render("CAUSE OF DEATH: CRITICAL HABITAT DECOMPRESSION & LIFE SUPPORT COLLAPSE", True, (240, 240, 245))
+        surface.blit(desc1, (box_x + (box_w - desc1.get_width()) // 2, box_y + 115))
+
+        reason_text = self.catastrophe_director.game_over_reason or "Emergency catastrophe unaddressed for over 1.30 minutes (90 seconds)."
+        desc2 = font_body.render(f"\"{reason_text}\"", True, (255, 140, 140))
+        surface.blit(desc2, (box_x + (box_w - desc2.get_width()) // 2, box_y + 140))
+
+        status_text = font_body.render("Space Health: 0%  |  Atmospheric Pressure: 0.0 kPa  |  O2 Reserves: 0.0 kg", True, (150, 160, 180))
+        surface.blit(status_text, (box_x + (box_w - status_text.get_width()) // 2, box_y + 175))
+
+        prompt_box = pygame.Rect(box_x + 80, box_y + 225, box_w - 160, 50)
+        pygame.draw.rect(surface, (30, 12, 16), prompt_box)
+        pygame.draw.rect(surface, (255, 200, 0), prompt_box, width=1)
+
+        retry = font_med.render("[R] RETRY MISSION & REVIVE CREW", True, (0, 255, 200))
+        surface.blit(retry, (prompt_box.x + 20, prompt_box.y + 16))
+
+        quit_txt = font_med.render("[ESC] QUIT SIMULATION", True, (255, 80, 80))
+        surface.blit(quit_txt, (prompt_box.right - quit_txt.get_width() - 20, prompt_box.y + 16))

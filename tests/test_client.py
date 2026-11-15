@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — Automated Test Suite.
+"""DUSTFALL — Automated Test Suite.
 
 Unit and integration tests covering movement normalization, animation state
 transitions, environmental telemetry parsing, missing metric formatting,
@@ -749,6 +749,168 @@ class TestMarsSurvivalClient(unittest.TestCase):
             backend_url="http://127.0.0.1:8000",
             grid_challenges=grid,
         )
+
+    def test_random_catastrophe_npc_sheltering_and_health_restoration(self):
+        """Verify random catastrophe injection, NPC evacuation inside shelter, challenge resets, and 100% space health recovery."""
+        from systems.catastrophe_manager import CatastropheDirector
+        from systems.npc_system import NPCSystem
+        from systems.grid_challenges import GridChallengeSystem
+        from systems.mission_system import MissionSystem
+        from systems.audio_synthesizer import SoundSynthesizer
+        from systems.particle_fx import ParticleFXSystem
+        from systems.floating_text import FloatingTextSystem
+        from world.world_state import WorldState
+        from world.player_state import PlayerState
+
+        world_state = WorldState()
+        player_state = PlayerState()
+        audio = SoundSynthesizer()
+        npc_system = NPCSystem()
+        grid = GridChallengeSystem()
+        missions = MissionSystem()
+        particle_fx = ParticleFXSystem()
+        floating_text = FloatingTextSystem()
+
+        director = CatastropheDirector(
+            world_state=world_state,
+            audio=audio,
+            npc_system=npc_system,
+            grid_challenges=grid,
+            mission_system=missions,
+            particle_fx=particle_fx,
+            floating_text=floating_text,
+            initial_delay=10.0,
+        )
+
+        # Baseline: 100% Space Health, Nominal NPCs
+        self.assertEqual(world_state.station_health, 100.0)
+        for npc in npc_system.npcs:
+            self.assertEqual(npc.state, "NOMINAL")
+
+        # 1. Trigger Catastrophe (Global Ferric Dust Storm)
+        cat = director.trigger_catastrophe("GLOBAL_DUST_STORM", pygame.Vector2(1000, 800))
+        self.assertEqual(cat["type"], "GLOBAL_DUST_STORM")
+        self.assertEqual(cat["duration"], 15.0, "Catastrophe must only last 15 seconds")
+        self.assertEqual(len(world_state.catastrophes), 1)
+        self.assertEqual(world_state.station_health, 35.0)
+
+        # 2. Verify all NPCs are put inside the shelter at first during the storm
+        for npc in npc_system.npcs:
+            self.assertEqual(npc.state, "SHELTERED")
+            self.assertIsNotNone(npc.shout_text)
+            # Must be placed inside the central rotunda shelter (880-1120, 730-950)
+            self.assertGreaterEqual(npc.world_x, 880.0)
+            self.assertLessEqual(npc.world_x, 1120.0)
+            self.assertGreaterEqual(npc.world_y, 730.0)
+            self.assertLessEqual(npc.world_y, 950.0)
+
+        # 3. Simulate frames: NPCs wander randomly inside the central habitat shelter
+        for _ in range(60):
+            npc_system.update(0.1, pygame.Vector2(1000, 800))
+
+        # All NPCs remain inside shelter wandering randomly
+        for npc in npc_system.npcs:
+            self.assertEqual(npc.state, "SHELTERED")
+
+        # Emergency dialogue guidance available
+        talk_res = npc_system.trigger_talk(pygame.Vector2(npc_system.npcs[0].world_x, npc_system.npcs[0].world_y))
+        self.assertIsNotNone(talk_res)
+        self.assertTrue(any(w in talk_res.upper() for w in ["EMERGENCY", "SHELTERING", "REPAIRS", "100%"]))
+
+        # 4. Redo challenges to repair space back to 100%
+        # Completing stations restores +20% Space Health each
+        grid.complete_station("st_moxie", world_state, player_state)
+        self.assertEqual(world_state.station_health, 55.0)
+
+        grid.complete_station("st_water_filter", world_state, player_state)
+        self.assertEqual(world_state.station_health, 75.0)
+
+        grid.complete_station("st_potato_bed", world_state, player_state)
+        self.assertEqual(world_state.station_health, 95.0)
+
+        grid.complete_station("st_solar_1", world_state, player_state)
+        self.assertEqual(world_state.station_health, 100.0)
+
+        # 5. Director recognizes 100% health restoration
+        director.update(0.016, pygame.Vector2(1000, 800))
+        self.assertEqual(len(world_state.catastrophes), 0)
+        self.assertFalse(director.is_emergency)
+
+        # NPCs transition to returning back to nominal stations
+        for npc in npc_system.npcs:
+            self.assertEqual(npc.state, "RETURNING")
+
+        # Simulate return journey
+        for _ in range(80):
+            npc_system.update(0.1, pygame.Vector2(1000, 800))
+
+        for npc in npc_system.npcs:
+            self.assertEqual(npc.state, "NOMINAL")
+
+        # Next catastrophe must be scheduled ~5 minutes (300s) later
+        self.assertGreaterEqual(director.random_timer, 270.0)
+        self.assertLessEqual(director.random_timer, 330.0)
+
+        # 6. Verify 15-second duration auto-expiration
+        cat2 = director.trigger_catastrophe("SEVERE_MARSQUAKE", pygame.Vector2(1000, 800))
+        self.assertEqual(cat2["duration"], 15.0)
+        self.assertEqual(len(world_state.catastrophes), 1)
+
+        # Step 15.1 seconds
+        director.update(15.1, pygame.Vector2(1000, 800))
+        # Active hazard expired after 15 seconds
+        self.assertEqual(len(world_state.catastrophes), 0)
+
+        # 7. Verify 1.30 minutes (90s) inactivity failure / death state
+        cat3 = director.trigger_catastrophe("HABITAT_HULL_BREACH", pygame.Vector2(1000, 800))
+        self.assertEqual(director.collapse_countdown, 90.0)
+        self.assertFalse(director.is_game_over)
+
+        # Advance 90.5s without completing repairs
+        director.update(90.5, pygame.Vector2(1000, 800))
+        self.assertTrue(director.is_game_over, "Game must fail if crisis unaddressed for 1.30 minutes")
+        self.assertEqual(world_state.station_health, 0.0)
+        self.assertTrue(any(k in director.game_over_reason.lower() for k in ["perished", "died", "collapsed"]))
+
+        # Revive and restart
+        director.restart(pygame.Vector2(1000, 800))
+        self.assertFalse(director.is_game_over)
+        self.assertEqual(world_state.station_health, 100.0)
+        self.assertEqual(director.collapse_countdown, 90.0)
+
+    def test_intro_video_mariner_9_hyperlink_and_timeline(self):
+        """Verify cinematic intro video playback, NASA Mariner 9 card strictly visible at 15-20s, and hyperlink URL."""
+        from scenes.intro_scene import IntroScene
+
+        intro = IntroScene()
+        self.assertTrue(intro.has_video, "Intro video asset must be loaded")
+        self.assertAlmostEqual(intro.duration, 38.6, delta=1.5)
+        self.assertEqual(intro.MARINER_URL, "https://science.nasa.gov/mission/mariner-9/")
+
+        # Test before 15.0s (e.g. at 10.0s) -> Mariner card not active
+        intro.elapsed_time = 10.0
+        surf = pygame.Surface((1280, 720))
+        intro.render(surf)
+        self.assertFalse(15.0 <= intro.elapsed_time <= 20.0)
+
+        # Test at 16.5s (strictly within 15.0s - 20.0s) -> Mariner card IS active
+        intro.elapsed_time = 16.5
+        self.assertTrue(15.0 <= intro.elapsed_time <= 20.0)
+        intro.render(surf)
+        self.assertIsNotNone(intro.mariner_img)
+
+        # Test Mariner 9 link interaction
+        intro.open_mariner_link()
+        self.assertTrue(any(k in intro.feedback_msg.lower() for k in ["opened", "mariner", "nasa"]))
+
+        # Test after 20.0s (e.g. at 22.0s) -> Mariner card window closed
+        intro.elapsed_time = 22.0
+        self.assertFalse(15.0 <= intro.elapsed_time <= 20.0)
+        intro.render(surf)
+
+        # Test skip / cleanup
+        intro.cleanup()
+        self.assertTrue(intro.finished)
 
 
 if __name__ == "__main__":

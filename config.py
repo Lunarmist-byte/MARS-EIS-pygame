@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — Pygame Simulation Client Configuration.
+"""DUSTFALL — Pygame Simulation Client Configuration.
 
 Centralized configuration for display settings, backend API parameters,
 world dimensions, player dynamics, facility landmark coordinates, and theme styling.
@@ -17,7 +17,7 @@ from typing import Dict, Any, Tuple
 # ==============================================================================
 WINDOW_WIDTH: int = 1280
 WINDOW_HEIGHT: int = 720
-WINDOW_TITLE: str = "MARS SURVIVAL — MARS-EIS Environmental Interface"
+WINDOW_TITLE: str = "DUSTFALL — MARS-EIS Environmental Interface"
 TARGET_FPS: int = 60
 
 # ==============================================================================

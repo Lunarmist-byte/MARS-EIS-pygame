@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — Integrated Game & Simulation Launcher.
+"""DUSTFALL — Integrated Game & Simulation Launcher.
 
 One-click launcher that starts the MARS-EIS environmental simulation engine
 on http://127.0.0.1:8000 in a dedicated background worker and immediately
@@ -18,10 +18,17 @@ import socket
 import threading
 import logging
 
-# Ensure ssosalien package path is discoverable
-ssosalien_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ssosalien"))
-if os.path.exists(ssosalien_dir) and ssosalien_dir not in sys.path:
-    sys.path.insert(0, ssosalien_dir)
+# Ensure ssosalien package path is discoverable across sibling or local clones
+candidate_dirs = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ssosalien")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "ssosalien")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "drsosospaceadventure")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "drsosospaceadventure")),
+]
+for d in candidate_dirs:
+    if os.path.exists(d) and d not in sys.path:
+        sys.path.insert(0, d)
+        break
 
 logging.basicConfig(
     level=logging.INFO,

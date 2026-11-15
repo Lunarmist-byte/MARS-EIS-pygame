@@ -66,6 +66,8 @@ class WorldState:
     catastrophes: List[Dict[str, Any]] = field(default_factory=list)
     issues: List[Dict[str, Any]] = field(default_factory=list)
     emergency_level: str = "NOMINAL"
+    station_health: float = 100.0  # Overall base & habitat integrity (0 - 100%)
+    collapse_countdown: float = 90.0  # Seconds until total habitat collapse during active issue (1.30 minutes / 90s)
     godot_visuals: Dict[str, Any] = field(default_factory=dict)
 
     def update_from_backend(self, data: Dict[str, Any], version: Optional[int] = None) -> bool:

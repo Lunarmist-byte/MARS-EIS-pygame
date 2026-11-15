@@ -1,4 +1,4 @@
-"""MARS SURVIVAL — Pygame Simulation Game Client.
+"""DUSTFALL — Pygame Simulation Game Client.
 Connected to MARS-EIS (Mars Environmental Intelligence & Simulation Engine).
 
 Entry point for initializing the Pygame display, starting the background
@@ -36,13 +36,13 @@ logging.basicConfig(
     format="[%(asctime)s] [%(levelname)s] [%(name)s]: %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("MarsSurvival")
+logger = logging.getLogger("Dustfall")
 
 
 def parse_arguments() -> argparse.Namespace:
     """Parse command line configuration flags."""
     parser = argparse.ArgumentParser(
-        description="MARS SURVIVAL — Pygame Simulation Client for MARS-EIS",
+        description="DUSTFALL — Pygame Simulation Client for MARS-EIS",
         epilog=f"{CREDIT_INFO['text']} | {CREDIT_INFO['github']}"
     )
     parser.add_argument(
@@ -78,13 +78,18 @@ def parse_arguments() -> argparse.Namespace:
         action="store_true",
         help="Run client in standalone offline mode without auto-starting backend"
     )
+    parser.add_argument(
+        "--skip-intro",
+        action="store_true",
+        help="Skip opening cinematic video intro"
+    )
     return parser.parse_args()
 
 
 def print_banner() -> None:
     """Print terminal startup banner."""
     print("================================================================")
-    print("   MARS SURVIVAL — SIMULATION CLIENT (PYGAME 2.x)")
+    print("   DUSTFALL — SIMULATION CLIENT (PYGAME 2.x)")
     print("   Integration with MARS-EIS Environmental Backend")
     print("================================================================")
 
@@ -137,9 +142,20 @@ def main() -> int:
     sync = SimulationSync(sync_config)
     sync.start()
 
-    # 3. Instantiate main scene
-    scene = MainScene(sync)
-    logger.info("Mars Survival client initialized. Entering main loop at %d FPS.", args.fps)
+    # 3. Check and instantiate intro scene or main scene
+    intro_scene = None
+    if not args.skip_intro and os.path.exists("assets/intro/intro_video.mp4"):
+        try:
+            from scenes.intro_scene import IntroScene
+            intro_scene = IntroScene()
+            logger.info("Opening cinematic video intro initialized.")
+        except Exception as exc:
+            logger.warning("Could not load intro video scene: %s. Starting main simulation directly.", exc)
+            intro_scene = None
+
+    main_scene = MainScene(sync)
+    current_scene = intro_scene if (intro_scene and not intro_scene.finished) else main_scene
+    logger.info("DUSTFALL client initialized. Entering main loop at %d FPS.", args.fps)
 
     # 4. Main Pygame delta-time loop
     running = True
@@ -149,11 +165,15 @@ def main() -> int:
             raw_dt_ms = clock.tick(args.fps)
             dt = min(raw_dt_ms / 1000.0, 0.05)
 
-            # Update scene
-            running = scene.update(dt)
-
-            # Render scene
-            scene.render(screen)
+            if current_scene is intro_scene:
+                running, intro_finished = intro_scene.update(dt)
+                intro_scene.render(screen)
+                if intro_finished:
+                    intro_scene.cleanup()
+                    current_scene = main_scene
+            else:
+                running = main_scene.update(dt)
+                main_scene.render(screen)
 
             # Flip double buffer
             pygame.display.flip()
@@ -165,7 +185,9 @@ def main() -> int:
         return 1
     finally:
         # Clean shutdown: stop background thread and release Pygame resources
-        logger.info("Shutting down Mars Survival client...")
+        logger.info("Shutting down DUSTFALL client...")
+        if intro_scene:
+            intro_scene.cleanup()
         sync.stop()
         pygame.quit()
         logger.info("All resources released. Goodbye.")

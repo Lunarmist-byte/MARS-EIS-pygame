@@ -224,6 +224,9 @@ class MissionSystem:
             if world_state.environment.dust_opacity_tau is not None:
                 world_state.environment.dust_opacity_tau = round(max(0.15, world_state.environment.dust_opacity_tau - 0.1), 2)
 
+        # Restore space / station health towards 100%
+        world_state.station_health = min(100.0, round(world_state.station_health + 25.0, 1))
+
         # Mark completed and cycle active index if this was the highlighted mission
         target_mission.completed = True
         target_mission.times_completed += 1
@@ -235,6 +238,15 @@ class MissionSystem:
         fb = f"MISSION COMPLETE: {target_mission.title.upper()}!"
         reward = f"REWARD EARNED: {target_mission.reward_desc}"
         return fb, reward
+
+    def reset_for_catastrophe(self, affected_facilities: Optional[List[str]] = None) -> int:
+        """Reset missions so player can repair damaged facilities."""
+        count = 0
+        for m in self.missions:
+            if affected_facilities is None or m.facility_id in affected_facilities:
+                m.completed = False
+                count += 1
+        return count
 
     def get_distance_to_current(self, player_pos: Tuple[float, float], base_facilities: Dict[str, Any]) -> float:
         """Calculate direct distance in meters to active target facility."""
